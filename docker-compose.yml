@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # 1. SERVICIO DE BASE DE DATOS
+  db:
+    image: postgres:15-alpine
+    container_name: saludplus_db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123 # Cambia esto por seguridad
+      POSTGRES_DB: saludplus_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data # Esto evita que se borren los datos al apagar el contenedor
+
+  # 2. SERVICIO DE BACKEND
+  backend:
+    build: 
+      context: ./backend # Asume que tu código backend está en esta carpeta
+    container_name: saludplus_backend
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - DB_HOST=db # Docker resuelve esto automáticamente
+      - DB_USER=admin
+      - DB_PASSWORD=password123
+      - DB_NAME=saludplus_db
+      - DB_PORT=5432
+      - JWT_SECRET=tu_secreto_aqui
+    depends_on:
+      - db # Espera a que la base de datos esté lista
+
+  # 3. SERVICIO DE FRONTEND
+  frontend:
+    build: 
+      context: ./frontend # Asume que tu código frontend está en esta carpeta
+    container_name: saludplus_frontend
+    ports:
+      - "5173:5173" # Puerto por defecto de Vite
+    environment:
+      - VITE_API_URL=http://localhost:5000/api
+    depends_on:
+      - backend
+
+# Declaración de volúmenes persistentes
+volumes:
+  pgdata:
