@@ -12,6 +12,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql # Crea la tabla para medicos
       - pgdata:/var/lib/postgresql/data # Esto evita que se borren los datos al apagar el contenedor
 
   # 2. SERVICIO DE BACKEND
@@ -31,6 +32,10 @@ services:
       - JWT_SECRET=tu_secreto_aqui
     depends_on:
       - db # Espera a que la base de datos esté lista
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/src/uploads:/app/src/uploads # Esto sincroniza la carpeta del contenedor con tu PC
 
   # 3. SERVICIO DE FRONTEND
   frontend:

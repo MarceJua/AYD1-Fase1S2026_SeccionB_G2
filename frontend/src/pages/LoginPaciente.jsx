@@ -73,7 +73,7 @@ const LoginPaciente = () => {
         </form>
 
         <div className="auth-footer">
-          ¿No tienes cuenta? <Link to="/registro">Regístrate aquí</Link>
+          ¿No tienes cuenta? <Link to="/seleccion-registro">Regístrate aquí</Link>
         </div>
       </div>
     </div>

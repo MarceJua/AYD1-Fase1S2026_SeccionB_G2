@@ -155,3 +155,22 @@ body {
     padding: 30px 20px;
   }
 }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Dos columnas en pantallas grandes */
+  gap: 15px;
+}
+
+.full-width {
+  grid-column: span 2; /* Los campos largos ocupan todo el ancho */
+}
+
+@media (max-width: 600px) {
+  .form-grid {
+    grid-template-columns: 1fr; /* Una columna en celulares */
+  }
+  .full-width {
+    grid-column: span 1;
+  }
+}
