@@ -85,15 +85,26 @@ const loginPaciente = async (req, res) => {
 // REGISTRO DE MÉDICO (HU-002)
 const registrarMedico = async (req, res) => {
   // 1. Extraer los campos del cuerpo de la petición (req.body)
-  const { 
-    nombre, apellido, dpi, fecha_nacimiento, genero, 
-    direccion, telefono, numero_colegiado, especialidad, 
-    direccion_clinica, correo, password 
+  const {
+    nombre,
+    apellido,
+    dpi,
+    fecha_nacimiento,
+    genero,
+    direccion,
+    telefono,
+    numero_colegiado,
+    especialidad,
+    direccion_clinica,
+    correo,
+    password,
   } = req.body;
 
   // 2. Validar que la foto exista (Requisito Crítico)
   if (!req.file) {
-    return res.status(400).json({ error: "La fotografía es obligatoria para el registro de médicos." });
+    return res.status(400).json({
+      error: "La fotografía es obligatoria para el registro de médicos.",
+    });
   }
 
   const fotoPath = req.file.path; // Ruta donde multer guardó la imagen
@@ -102,11 +113,13 @@ const registrarMedico = async (req, res) => {
     // 3. Verificar si el médico ya existe (Correo, DPI o Número Colegiado)
     const medicoExist = await pool.query(
       "SELECT * FROM medicos WHERE correo = $1 OR dpi = $2 OR numero_colegiado = $3",
-      [correo, dpi, numero_colegiado]
+      [correo, dpi, numero_colegiado],
     );
 
     if (medicoExist.rows.length > 0) {
-      return res.status(400).json({ error: "El correo, DPI o Número de Colegiado ya están registrados." });
+      return res.status(400).json({
+        error: "El correo, DPI o Número de Colegiado ya están registrados.",
+      });
     }
 
     // 4. Encriptar la contraseña (Igual que pacientes)
@@ -122,17 +135,28 @@ const registrarMedico = async (req, res) => {
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
       RETURNING id, nombre, correo, estado`,
       [
-        nombre, apellido, dpi, fecha_nacimiento, genero, 
-        direccion, telefono, fotoPath, numero_colegiado, 
-        especialidad, direccion_clinica, correo, passwordEncriptada, 'pendiente'
-      ]
+        nombre,
+        apellido,
+        dpi,
+        fecha_nacimiento,
+        genero,
+        direccion,
+        telefono,
+        fotoPath,
+        numero_colegiado,
+        especialidad,
+        direccion_clinica,
+        correo,
+        passwordEncriptada,
+        "pendiente",
+      ],
     );
 
     res.status(201).json({
-      mensaje: "Registro completado. Su cuenta está pendiente de aprobación por el administrador.",
+      mensaje:
+        "Registro completado. Su cuenta está pendiente de aprobación por el administrador.",
       usuario: nuevoMedico.rows[0],
     });
-
   } catch (error) {
     console.error("Error en registro médico:", error.message);
     res.status(500).json({ error: "Error en el servidor al registrar médico" });
@@ -145,10 +169,9 @@ const loginMedico = async (req, res) => {
 
   try {
     // 1. Buscar al médico en la tabla que creamos
-    const result = await pool.query(
-      "SELECT * FROM medicos WHERE correo = $1",
-      [correo]
-    );
+    const result = await pool.query("SELECT * FROM medicos WHERE correo = $1", [
+      correo,
+    ]);
 
     if (result.rows.length === 0) {
       return res.status(400).json({ error: "Credenciales inválidas" });
@@ -157,9 +180,9 @@ const loginMedico = async (req, res) => {
     const medico = result.rows[0];
 
     // 2. VALIDACIÓN CRÍTICA: ¿Está aprobado? (Requisito de la Fase 1)
-    if (medico.estado !== 'aprobado') {
-      return res.status(403).json({ 
-        error: "Su cuenta está pendiente de aprobación por el administrador." 
+    if (medico.estado !== "aprobado") {
+      return res.status(403).json({
+        error: "Su cuenta está pendiente de aprobación por el administrador.",
       });
     }
 
@@ -171,19 +194,19 @@ const loginMedico = async (req, res) => {
 
     // 4. Generar Token de Sesión (Igual que pacientes, pero con rol 'medico')
     const token = jwt.sign(
-      { id: medico.id, rol: 'medico' },
+      { id: medico.id, rol: "medico" },
       process.env.JWT_SECRET || "mi_clave_secreta",
-      { expiresIn: "8h" }
+      { expiresIn: "8h" },
     );
 
     res.json({
       mensaje: "Inicio de sesión exitoso",
       token,
-      usuario: { 
-        id: medico.id, 
-        nombre: medico.nombre, 
-        rol: 'medico',
-        foto: medico.foto 
+      usuario: {
+        id: medico.id,
+        nombre: medico.nombre,
+        rol: "medico",
+        foto: medico.foto,
       },
     });
   } catch (error) {
@@ -218,11 +241,12 @@ const loginAdmin = async (req, res) => {
     const tokenTemporal = jwt.sign(
       { id: "admin", rol: "admin-pending-2fa", usuario },
       process.env.JWT_SECRET || "mi_clave_secreta",
-      { expiresIn: "10m" }
+      { expiresIn: "10m" },
     );
 
     res.json({
-      mensaje: "Primer factor completado. Proceda con la autenticación de segundo factor.",
+      mensaje:
+        "Primer factor completado. Proceda con la autenticación de segundo factor.",
       tokenTemporal,
       requiere2FA: true,
     });
@@ -246,13 +270,20 @@ const validar2FA = async (req, res) => {
 
     let decoded;
     try {
-      decoded = jwt.verify(tokenTemporal, process.env.JWT_SECRET || "mi_clave_secreta");
+      decoded = jwt.verify(
+        tokenTemporal,
+        process.env.JWT_SECRET || "mi_clave_secreta",
+      );
     } catch (error) {
-      return res.status(401).json({ error: "Token temporal expirado. Inicie sesión nuevamente" });
+      return res
+        .status(401)
+        .json({ error: "Token temporal expirado. Inicie sesión nuevamente" });
     }
 
     if (decoded.rol !== "admin-pending-2fa") {
-      return res.status(401).json({ error: "Token inválido para segundo factor" });
+      return res
+        .status(401)
+        .json({ error: "Token inválido para segundo factor" });
     }
 
     console.log("Segundo factor - Validando contraseña encriptada...");
@@ -270,7 +301,9 @@ const validar2FA = async (req, res) => {
 
     if (!passwordValida) {
       console.log("Contraseña encriptada inválida");
-      return res.status(400).json({ error: "Contraseña de segundo factor inválida" });
+      return res
+        .status(400)
+        .json({ error: "Contraseña de segundo factor inválida" });
     }
 
     console.log("Segundo factor validado - Generando token final...");
@@ -279,26 +312,77 @@ const validar2FA = async (req, res) => {
     const tokenFinal = jwt.sign(
       { id: "admin", rol: "admin", usuario: decoded.usuario },
       process.env.JWT_SECRET || "mi_clave_secreta",
-      { expiresIn: "8h" }
+      { expiresIn: "8h" },
     );
 
     res.json({
       mensaje: "Autenticación completada exitosamente",
       token: tokenFinal,
-      usuario: { 
-        id: "admin", 
-        nombre: "Administrador", 
+      usuario: {
+        id: "admin",
+        nombre: "Administrador",
         rol: "admin",
-        usuario: decoded.usuario
+        usuario: decoded.usuario,
       },
     });
   } catch (error) {
     if (error.code === "ENOENT") {
       console.error("Archivo auth2-ayd1.txt no encontrado");
-      return res.status(500).json({ error: "Error de configuración del servidor" });
+      return res
+        .status(500)
+        .json({ error: "Error de configuración del servidor" });
     }
     console.error("Error en segundo factor:", error.message);
     res.status(500).json({ error: "Error en el servidor" });
+  }
+};
+
+// Modulo administrador (HU-005) para aprobar o rechazar usuarios.
+const obtenerMedicosPendientes = async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, nombre, apellido, especialidad, correo, estado FROM medicos WHERE estado = 'pendiente'",
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ error: "Error al obtener médicos pendientes" });
+  }
+};
+
+const aprobarMedico = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      "UPDATE medicos SET estado = 'aprobado' WHERE id = $1 RETURNING *",
+      [id],
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Médico no encontrado" });
+    }
+
+    res.json({ mensaje: "Médico aprobado correctamente" });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ error: "Error al aprobar médico" });
+  }
+};
+
+const rechazarMedico = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await pool.query("UPDATE medicos SET estado = 'rechazado' WHERE id = $1", [
+      id,
+    ]);
+
+    res.json({ mensaje: "Médico rechazado correctamente" });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ error: "Error al rechazar médico" });
   }
 };
 
@@ -309,4 +393,7 @@ module.exports = {
   loginMedico,
   loginAdmin,
   validar2FA,
+  obtenerMedicosPendientes,
+  aprobarMedico,
+  rechazarMedico,
 };
