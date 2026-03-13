@@ -6,6 +6,8 @@ const {
   loginPaciente,
   registrarMedico,
   loginMedico,
+  loginAdmin,
+  validar2FA,
 } = require("../controllers/authController");
 
 // Rutas para el paciente
@@ -16,5 +18,9 @@ router.post("/paciente/login", loginPaciente);
 // Ruta para el registro médico con Multer (Foto obligatoria)
 router.post("/medico/registro", upload.single("foto"), registrarMedico);
 router.post("/medico/login", loginMedico);
+
+// Rutas para el administrador (HU-004) - Autenticación de 2 factores
+router.post("/admin/login", loginAdmin);           // Primer factor
+router.post("/admin/validar-2fa", validar2FA);     // Segundo factor
 
 module.exports = router;
