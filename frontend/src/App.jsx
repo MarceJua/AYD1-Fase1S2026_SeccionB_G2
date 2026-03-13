@@ -4,7 +4,9 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import RegistroPaciente from "./pages/RegistroPaciente";
 import LoginPaciente from "./pages/LoginPaciente";
 import RegistroMedico from './pages/RegistroMedico';
-import SeleccionRol from './pages/SeleccionRol'; // Nueva importación
+import SeleccionRol from './pages/SeleccionRol';
+import LoginAdmin from './pages/LoginAdmin';
+import Admin2FA from './pages/Admin2FA';
 
 function App() {
   return (
@@ -14,6 +16,8 @@ function App() {
 
         {/* Rutas Públicas */}
         <Route path="/login" element={<LoginPaciente />} />
+        <Route path="/admin-login" element={<LoginAdmin />} />
+        <Route path="/admin-2fa" element={<Admin2FA />} />
         <Route path="/seleccion-registro" element={<SeleccionRol />} />
         <Route path="/registro" element={<RegistroPaciente />} />
         <Route path="/registro-medico" element={<RegistroMedico />} />
@@ -23,7 +27,15 @@ function App() {
           path="/dashboard"
           element={
             <h2 style={{ textAlign: "center", marginTop: "50px" }}>
-              Bienvenido a SaludPlus 🏥
+              Bienvenido a SaludPlus 
+            </h2>
+          }
+        />
+        <Route
+          path="/admin-dashboard"
+          element={
+            <h2 style={{ textAlign: "center", marginTop: "50px" }}>
+              Panel de Control del Administrador
             </h2>
           }
         />
