@@ -15,6 +15,10 @@ const {
   obtenerPacientesPendientes,
   aprobarPaciente,
   rechazarPaciente,
+  obtenerMedicosAprobados,
+  obtenerPacientesAprobados,
+  darBajaMedico,
+  darBajaPaciente,
 } = require("../controllers/authController");
 
 // Rutas para el paciente
@@ -34,5 +38,10 @@ router.post("/admin/rechazar-medico/:id", rechazarMedico);
 router.get("/admin/pacientes-pendientes", obtenerPacientesPendientes);
 router.post("/admin/aprobar-paciente/:id", aprobarPaciente);
 router.post("/admin/rechazar-paciente/:id", rechazarPaciente);
+// Rutas para HU-014 (Dar de baja y ver aprobados)
+router.get("/admin/medicos-aprobados", obtenerMedicosAprobados);
+router.get("/admin/pacientes-aprobados", obtenerPacientesAprobados);
+router.post("/admin/baja-medico/:id", darBajaMedico);
+router.post("/admin/baja-paciente/:id", darBajaPaciente);
 
 module.exports = router;
