@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
+
 import "../styles/Login_Register_Paciente.css";
 
 const LoginPaciente = () => {
@@ -74,6 +75,9 @@ const LoginPaciente = () => {
 
         <div className="auth-footer">
           ¿No tienes cuenta? <Link to="/seleccion-registro">Regístrate aquí</Link>
+        </div>
+        <div className="auth-footer">
+          ¿Eres médico? <Link to="/login-medico">Inicia sesión aquí</Link>
         </div>
       </div>
     </div>

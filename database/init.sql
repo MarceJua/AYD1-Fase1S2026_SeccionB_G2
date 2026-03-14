@@ -1,11 +1,17 @@
 -- database/init.sql
 
 -- Tabla de Pacientes (HU-001)
-CREATE TABLE pacientes (
+CREATE TABLE IF NOT EXISTS pacientes (
     id SERIAL PRIMARY KEY,
-    nombre VARCHAR(150) NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    apellido VARCHAR(100) NOT NULL,
     dpi VARCHAR(20) UNIQUE NOT NULL,
-    correo VARCHAR(150) UNIQUE NOT NULL,
+    genero VARCHAR(20),
+    direccion VARCHAR(200),
+    telefono VARCHAR(20),
+    fecha_nacimiento DATE,
+    foto VARCHAR(255),
+    correo VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     rol VARCHAR(20) DEFAULT 'paciente',
     estado VARCHAR(20) DEFAULT 'pendiente',
@@ -28,6 +34,7 @@ CREATE TABLE IF NOT EXISTS medicos (
     direccion_clinica TEXT NOT NULL,
     correo VARCHAR(100) UNIQUE NOT NULL,
     contrasena TEXT NOT NULL,
+    rol VARCHAR(20) DEFAULT 'medico',
     estado VARCHAR(20) DEFAULT 'pendiente',
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ); 
