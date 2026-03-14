@@ -468,6 +468,52 @@ const rechazarMedico = async (req, res) => {
   }
 };
 
+// --- HU-014: VER USUARIOS APROBADOS ---
+const obtenerMedicosAprobados = async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, foto, nombre, apellido, dpi, genero, especialidad, numero_colegiado, correo FROM medicos WHERE estado = 'aprobado'",
+    );
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: "Error al obtener médicos aprobados" });
+  }
+};
+
+const obtenerPacientesAprobados = async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, foto, nombre, apellido, dpi, genero, correo FROM pacientes WHERE estado = 'aprobado'",
+    );
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: "Error al obtener pacientes aprobados" });
+  }
+};
+
+// --- HU-014: DAR DE BAJA USUARIOS ---
+const darBajaMedico = async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query("UPDATE medicos SET estado = 'baja' WHERE id = $1", [id]);
+    res.json({ mensaje: "Médico dado de baja exitosamente" });
+  } catch (error) {
+    res.status(500).json({ error: "Error al dar de baja al médico" });
+  }
+};
+
+const darBajaPaciente = async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query("UPDATE pacientes SET estado = 'baja' WHERE id = $1", [
+      id,
+    ]);
+    res.json({ mensaje: "Paciente dado de baja exitosamente" });
+  } catch (error) {
+    res.status(500).json({ error: "Error al dar de baja al paciente" });
+  }
+};
+
 module.exports = {
   registrarPaciente,
   loginPaciente,
@@ -481,4 +527,8 @@ module.exports = {
   obtenerPacientesPendientes,
   aprobarPaciente,
   rechazarPaciente,
+  obtenerMedicosAprobados,
+  obtenerPacientesAprobados,
+  darBajaMedico,
+  darBajaPaciente,
 };

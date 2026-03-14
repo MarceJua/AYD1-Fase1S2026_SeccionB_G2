@@ -6,6 +6,8 @@ const AdminDashboard = () => {
   const [medicos, setMedicos] = useState([]);
   const [pacientes, setPacientes] = useState([]);
   const [mensaje, setMensaje] = useState('');
+  const [medicosAprobados, setMedicosAprobados] = useState([]);
+  const [pacientesAprobados, setPacientesAprobados] = useState([]);
   const navigate = useNavigate();
 
   // Declarar funciones ARRIBA del useEffect
@@ -27,6 +29,12 @@ const AdminDashboard = () => {
       const resPacientes = await fetch('http://localhost:5000/api/auth/admin/pacientes-pendientes', config);
       if (resPacientes.ok) setPacientes(await resPacientes.json());
 
+      const resMedAprobados = await fetch('http://localhost:5000/api/auth/admin/medicos-aprobados', config);
+      if (resMedAprobados.ok) setMedicosAprobados(await resMedAprobados.json());
+
+      const resPacAprobados = await fetch('http://localhost:5000/api/auth/admin/pacientes-aprobados', config);
+      if (resPacAprobados.ok) setPacientesAprobados(await resPacAprobados.json());
+
     } catch (error) {
       console.error('Error de red:', error);
     }
@@ -36,6 +44,29 @@ const AdminDashboard = () => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchPendientes();
   }, []);
+
+  const handleDarDeBaja = async (tipo, id) => {
+    if (!window.confirm(`¿Estás súper seguro de dar de BAJA a este ${tipo}? Ya no podrá iniciar sesión.`)) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/auth/admin/baja-${tipo}/${id}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        setMensaje(`⚠️ ${tipo === 'medico' ? 'Médico' : 'Paciente'} dado de baja`);
+        if (tipo === 'medico') {
+          setMedicosAprobados(medicosAprobados.filter(m => m.id !== id));
+        } else {
+          setPacientesAprobados(pacientesAprobados.filter(p => p.id !== id));
+        }
+      }
+    } catch (error) {
+      console.error('Error al dar de baja:', error);
+    }
+  };
 
   const handleAccion = async (tipo, accion, id) => {
     if (!window.confirm(`¿Estás seguro de ${accion.toUpperCase()} a este ${tipo}?`)) return;
@@ -62,7 +93,12 @@ const AdminDashboard = () => {
 
   // Función auxiliar para construir la ruta de la imagen
   const getImageUrl = (rutaFoto) => {
-    return rutaFoto ? `http://localhost:5000/${rutaFoto.replace(/\\/g, '/')}` : 'https://via.placeholder.com/50';
+    if (!rutaFoto) return 'https://via.placeholder.com/50';
+    
+    // Extraemos solo el nombre del archivo (ignorando carpetas y diagonales)
+    const nombreArchivo = rutaFoto.split('\\').pop().split('/').pop();
+    
+    return `http://localhost:5000/uploads/${nombreArchivo}`;
   };
 
   return (
@@ -136,6 +172,53 @@ const AdminDashboard = () => {
                 <td>
                   <button className="btn-aprobar" onClick={() => handleAccion('paciente', 'aprobar', paciente.id)}>Aceptar</button>
                   <button className="btn-rechazar" onClick={() => handleAccion('paciente', 'rechazar', paciente.id)}>Rechazar</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <hr style={{ margin: '40px 0', border: '1px solid #ccc' }}/>
+      <h2 style={{ color: '#0056b3' }}>🟢 Usuarios Activos en el Sistema</h2>
+
+      {/* TABLA DE MÉDICOS APROBADOS */}
+      <h3>Médicos Activos</h3>
+      {medicosAprobados.length === 0 ? <p>No hay médicos activos.</p> : (
+        <table className="admin-table">
+          {/* Mismos <thead> que la otra tabla */}
+          <tbody>
+            {medicosAprobados.map(medico => (
+              <tr key={medico.id}>
+                <td><img src={getImageUrl(medico.foto)} alt="Perfil" className="foto-perfil" /></td>
+                <td>{medico.nombre} {medico.apellido}</td>
+                <td>{medico.dpi}</td>
+                <td>{medico.genero}</td>
+                <td>{medico.numero_colegiado}</td>
+                <td>{medico.especialidad}</td>
+                <td>{medico.correo}</td>
+                <td>
+                  <button className="btn-rechazar" onClick={() => handleDarDeBaja('medico', medico.id)}>Dar de Baja</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {/* TABLA DE PACIENTES APROBADOS */}
+      <h3>Pacientes Activos</h3>
+      {pacientesAprobados.length === 0 ? <p>No hay pacientes activos.</p> : (
+        <table className="admin-table">
+          {/* Mismos <thead> que la otra tabla */}
+          <tbody>
+            {pacientesAprobados.map(paciente => (
+              <tr key={paciente.id}>
+                <td><img src={getImageUrl(paciente.foto)} alt="Perfil" className="foto-perfil" /></td>
+                <td>{paciente.nombre} {paciente.apellido}</td>
+                <td>{paciente.dpi}</td>
+                <td>{paciente.genero}</td>
+                <td>{paciente.correo}</td>
+                <td>
+                  <button className="btn-rechazar" onClick={() => handleDarDeBaja('paciente', paciente.id)}>Dar de Baja</button>
                 </td>
               </tr>
             ))}
