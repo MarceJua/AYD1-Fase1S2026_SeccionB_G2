@@ -6,6 +6,8 @@ El proyecto "SaludPlus" está diseñado bajo una arquitectura de microservicios 
 
 La arquitectura se compone de tres contenedores principales interconectados en una red interna de Docker:
 
+[![Arquitectura SaludPlus](./imagenes/SaludPlusDiagrama1.png)](./imagenes/SaludPlusDiagrama1.png)
+
 1. **Contenedor de Base de Datos (`saludplus_db`):** \* Utiliza la imagen oficial de `postgres:15-alpine`.
    - Expone el puerto `5432`.
    - Implementa un volumen persistente (`pgdata`) para evitar la pérdida de información médica y credenciales al apagar el contenedor.
