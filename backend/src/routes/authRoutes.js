@@ -12,10 +12,13 @@ const {
   obtenerMedicosPendientes,
   aprobarMedico,
   rechazarMedico,
+  obtenerPacientesPendientes,
+  aprobarPaciente,
+  rechazarPaciente,
 } = require("../controllers/authController");
 
 // Rutas para el paciente
-router.post("/paciente/registro", registrarPaciente);
+router.post("/paciente/registro", upload.single("foto"), registrarPaciente);
 router.post("/paciente/login", loginPaciente);
 // Rutas para el médico (HU-002)
 // Ruta para el registro médico con Multer (Foto obligatoria)
@@ -28,5 +31,8 @@ router.post("/admin/validar-2fa", validar2FA); // Segundo factor
 router.get("/admin/medicos-pendientes", obtenerMedicosPendientes);
 router.post("/admin/aprobar-medico/:id", aprobarMedico);
 router.post("/admin/rechazar-medico/:id", rechazarMedico);
+router.get("/admin/pacientes-pendientes", obtenerPacientesPendientes);
+router.post("/admin/aprobar-paciente/:id", aprobarPaciente);
+router.post("/admin/rechazar-paciente/:id", rechazarPaciente);
 
 module.exports = router;

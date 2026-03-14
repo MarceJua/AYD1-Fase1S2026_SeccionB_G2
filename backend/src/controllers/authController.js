@@ -6,10 +6,24 @@ const path = require("path");
 
 // REGISTRO DE PACIENTE
 const registrarPaciente = async (req, res) => {
-  const { nombre, dpi, correo, password } = req.body;
+  // 1. Extraer TODOS los campos que pide el enunciado
+  const {
+    nombre,
+    apellido,
+    dpi,
+    genero,
+    direccion,
+    telefono,
+    fecha_nacimiento,
+    correo,
+    password,
+  } = req.body;
+
+  // 2. Extraer foto si viene (es opcional para pacientes)
+  const fotoPath = req.file ? req.file.path : null;
 
   try {
-    // 1. Verificar si el paciente ya existe por correo o DPI
+    // 3. Verificar si el paciente ya existe por correo o DPI
     const userExist = await pool.query(
       "SELECT * FROM pacientes WHERE correo = $1 OR dpi = $2",
       [correo, dpi],
@@ -20,22 +34,40 @@ const registrarPaciente = async (req, res) => {
         .json({ error: "El correo o DPI ya están registrados." });
     }
 
-    // 2. Encriptar la contraseña
+    // 4. Encriptar la contraseña
     const salt = await bcrypt.genSalt(10);
     const passwordEncriptada = await bcrypt.hash(password, salt);
 
-    // 3. Guardar en la base de datos
+    // 5. Guardar en la base de datos CON ESTADO PENDIENTE
     const nuevoPaciente = await pool.query(
-      "INSERT INTO pacientes (nombre, dpi, correo, password, rol) VALUES ($1, $2, $3, $4, $5) RETURNING id, nombre, correo, rol",
-      [nombre, dpi, correo, passwordEncriptada, "paciente"],
+      `INSERT INTO pacientes (
+        nombre, apellido, dpi, genero, direccion, telefono, 
+        fecha_nacimiento, foto, correo, password, rol, estado
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
+      RETURNING id, nombre, correo, estado`,
+      [
+        nombre,
+        apellido,
+        dpi,
+        genero,
+        direccion,
+        telefono,
+        fecha_nacimiento,
+        fotoPath,
+        correo,
+        passwordEncriptada,
+        "paciente",
+        "pendiente",
+      ],
     );
 
     res.status(201).json({
-      mensaje: "Paciente registrado exitosamente",
+      mensaje:
+        "Registro completado. Su cuenta está pendiente de aprobación por el administrador.",
       usuario: nuevoPaciente.rows[0],
     });
   } catch (error) {
-    console.error(error.message);
+    console.error("Error en registro paciente:", error.message);
     res
       .status(500)
       .json({ error: "Error en el servidor al registrar paciente" });
@@ -52,19 +84,27 @@ const loginPaciente = async (req, res) => {
       "SELECT * FROM pacientes WHERE correo = $1",
       [correo],
     );
+
     if (result.rows.length === 0) {
       return res.status(400).json({ error: "Credenciales inválidas" });
     }
 
     const usuario = result.rows[0];
 
-    // 2. Comparar la contraseña ingresada con la encriptada
+    // 2. VALIDACIÓN CRÍTICA: ¿Está aprobado?
+    if (usuario.estado !== "aprobado") {
+      return res.status(403).json({
+        error: "Su cuenta está pendiente de aprobación por el administrador.",
+      });
+    }
+
+    // 3. Comparar la contraseña
     const passwordValida = await bcrypt.compare(password, usuario.password);
     if (!passwordValida) {
       return res.status(400).json({ error: "Credenciales inválidas" });
     }
 
-    // 3. Generar el Token de Sesión
+    // 4. Generar el Token de Sesión
     const token = jwt.sign(
       { id: usuario.id, rol: usuario.rol },
       process.env.JWT_SECRET || "mi_clave_secreta",
@@ -77,7 +117,7 @@ const loginPaciente = async (req, res) => {
       usuario: { id: usuario.id, nombre: usuario.nombre, rol: usuario.rol },
     });
   } catch (error) {
-    console.error(error.message);
+    console.error("Error en login paciente:", error.message);
     res.status(500).json({ error: "Error en el servidor al iniciar sesión" });
   }
 };
@@ -341,13 +381,55 @@ const validar2FA = async (req, res) => {
 const obtenerMedicosPendientes = async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, nombre, apellido, especialidad, correo, estado FROM medicos WHERE estado = 'pendiente'",
+      "SELECT id, foto, nombre, apellido, dpi, genero, especialidad, numero_colegiado, correo, estado FROM medicos WHERE estado = 'pendiente'",
     );
-
     res.json(result.rows);
   } catch (error) {
     console.error(error.message);
     res.status(500).json({ error: "Error al obtener médicos pendientes" });
+  }
+};
+
+// --- NUEVAS FUNCIONES PARA PACIENTES (HU-005) ---
+const obtenerPacientesPendientes = async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, foto, nombre, apellido, dpi, genero, fecha_nacimiento, correo, estado FROM pacientes WHERE estado = 'pendiente'",
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ error: "Error al obtener pacientes pendientes" });
+  }
+};
+
+const aprobarPaciente = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      "UPDATE pacientes SET estado = 'aprobado' WHERE id = $1 RETURNING *",
+      [id],
+    );
+    if (result.rowCount === 0)
+      return res.status(404).json({ error: "Paciente no encontrado" });
+    res.json({ mensaje: "Paciente aprobado correctamente" });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ error: "Error al aprobar paciente" });
+  }
+};
+
+const rechazarPaciente = async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query(
+      "UPDATE pacientes SET estado = 'rechazado' WHERE id = $1",
+      [id],
+    );
+    res.json({ mensaje: "Paciente rechazado correctamente" });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ error: "Error al rechazar paciente" });
   }
 };
 
@@ -396,4 +478,7 @@ module.exports = {
   obtenerMedicosPendientes,
   aprobarMedico,
   rechazarMedico,
+  obtenerPacientesPendientes,
+  aprobarPaciente,
+  rechazarPaciente,
 };
