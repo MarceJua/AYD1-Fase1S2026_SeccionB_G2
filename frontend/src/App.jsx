@@ -4,11 +4,11 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import RegistroPaciente from "./pages/RegistroPaciente";
 import LoginPaciente from "./pages/LoginPaciente";
 import LoginMedico from "./pages/LoginMedico";
-import RegistroMedico from './pages/RegistroMedico';
-import SeleccionRol from './pages/SeleccionRol';
-import LoginAdmin from './pages/LoginAdmin';
-import Admin2FA from './pages/Admin2FA';
-import AdminDashboard from './pages/AdminDashboard';
+import RegistroMedico from "./pages/RegistroMedico";
+import SeleccionRol from "./pages/SeleccionRol";
+import LoginAdmin from "./pages/LoginAdmin";
+import Admin2FA from "./pages/Admin2FA";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
@@ -30,7 +30,7 @@ function App() {
           path="/dashboard"
           element={
             <h2 style={{ textAlign: "center", marginTop: "50px" }}>
-              Bienvenido a SaludPlus 
+              Bienvenido a SaludPlus
             </h2>
           }
         />

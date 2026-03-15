@@ -514,6 +514,51 @@ const darBajaPaciente = async (req, res) => {
   }
 };
 
+// Funciones para reportes analiticos HU-012
+// 1. Reporte de médicos que más pasientes han atendidos (HU-012)
+const reporteMedicosMasAtendidos = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        m.id,
+        m.nombre,
+        m.apellido,
+        COUNT(c.id) AS total_citas
+      FROM medicos m
+      JOIN citas c ON c.medico_id = m.id
+      WHERE c.estado = 'atendida'
+      GROUP BY m.id
+      ORDER BY total_citas DESC
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error generando reporte" });
+  }
+};
+
+// 2. Especialidad con más citas atendidas (HU-012)
+const reporteEspecialidades = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        especialidad,
+        COUNT(c.id) AS total_citas
+      FROM medicos m
+      JOIN citas c ON c.medico_id = m.id
+      WHERE c.estado = 'atendida'
+      GROUP BY especialidad
+      ORDER BY total_citas DESC
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error generando reporte" });
+  }
+};
+
 module.exports = {
   registrarPaciente,
   loginPaciente,
@@ -531,4 +576,6 @@ module.exports = {
   obtenerPacientesAprobados,
   darBajaMedico,
   darBajaPaciente,
+  reporteMedicosMasAtendidos,
+  reporteEspecialidades,
 };
