@@ -10,6 +10,7 @@ import LoginAdmin from "./pages/LoginAdmin";
 import Admin2FA from "./pages/Admin2FA";
 import AdminDashboard from "./pages/AdminDashboard";
 import DashboardPaciente from "./pages/DashboardPaciente";
+import PerfilPaciente from "./pages/PerfilPaciente";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
 
         <Route path="/dashboard" element={<DashboardPaciente />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/perfil" element={<PerfilPaciente />} />
       </Routes>
     </BrowserRouter>
   );

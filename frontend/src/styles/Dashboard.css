@@ -160,3 +160,28 @@
 .btn-logout:hover {
   background-color: #bb2d3b;
 }
+
+/* =========================================
+   Botones del Header (Perfil y Logout)
+   ========================================= */
+.header-buttons {
+  display: flex;
+  gap: 15px; /* Espacio entre los botones */
+  align-items: center;
+}
+
+.btn-perfil {
+  background-color: #28a745; /* Verde médico / éxito */
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-perfil:hover {
+  background-color: #218838;
+}

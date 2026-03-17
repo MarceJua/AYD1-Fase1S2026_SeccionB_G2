@@ -55,9 +55,16 @@ const DashboardPaciente = () => {
       <header className="dashboard-header">
         <div className="header-top">
           <h1>Portal del Paciente</h1>
-          <button onClick={handleLogout} className="btn-logout">
-            Cerrar Sesión
-          </button>
+
+          {/* Agrupamos los botones aquí */}
+          <div className="header-buttons">
+            <button onClick={() => navigate("/perfil")} className="btn-perfil">
+              Mi Perfil
+            </button>
+            <button onClick={handleLogout} className="btn-logout">
+              Cerrar Sesión
+            </button>
+          </div>
         </div>
         <p>Encuentra a tu especialista ideal</p>
       </header>
@@ -65,7 +72,7 @@ const DashboardPaciente = () => {
       <section className="search-section">
         <input
           type="text"
-          placeholder="🔍 Buscar por especialidad (ej. Cardiología)..."
+          placeholder="Buscar por especialidad (ej. Cardiología)..."
           value={especialidadFiltro}
           onChange={(e) => setEspecialidadFiltro(e.target.value)}
           className="search-input"
