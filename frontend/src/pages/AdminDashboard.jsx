@@ -226,6 +226,7 @@ const AdminDashboard = () => {
 
     return `http://localhost:5000/uploads/${nombreArchivo}`;
   };
+  
 
   return (
     <div className="admin-container">

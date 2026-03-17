@@ -9,6 +9,7 @@ import SeleccionRol from "./pages/SeleccionRol";
 import LoginAdmin from "./pages/LoginAdmin";
 import Admin2FA from "./pages/Admin2FA";
 import AdminDashboard from "./pages/AdminDashboard";
+import DashboardPaciente from "./pages/DashboardPaciente";
 
 function App() {
   return (
@@ -25,15 +26,7 @@ function App() {
         <Route path="/registro" element={<RegistroPaciente />} />
         <Route path="/registro-medico" element={<RegistroMedico />} />
 
-        {/* Rutas Privadas (Sprint 2) */}
-        <Route
-          path="/dashboard"
-          element={
-            <h2 style={{ textAlign: "center", marginTop: "50px" }}>
-              Bienvenido a SaludPlus
-            </h2>
-          }
-        />
+        <Route path="/dashboard" element={<DashboardPaciente />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
       </Routes>
     </BrowserRouter>
