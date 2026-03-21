@@ -86,3 +86,32 @@ npm install bcryptjs jsonwebtoken
 * **Componente Creado:**
     * `HorarioMedico.jsx`: Vista con checkboxes para seleccionar días (Lunes–Domingo), inputs `type="time"` para hora inicio y fin, y botón dinámico que muestra **"Guardar horario"** si es la primera vez o **"Actualizar horario"** si ya existe un horario. Muestra la lista de citas conflictivas si el backend responde 409.
 * **Navegación:** Se registró la ruta `/horario-medico` en `App.jsx` y se corrigió el redirect del login del médico para apuntar a esta vista en lugar del dashboard del paciente.
+
+---
+
+# HU-013 Resumen de Acciones Realizadas
+
+## 1. Base de Datos (Persistencia)
+* **Sin cambios de esquema:** Se reutilizó la tabla `medicos` definida en `database/init.sql`. Los campos requeridos por la historia (`nombre`, `apellido`, `dpi`, `fecha_nacimiento`, `genero`, `direccion`, `telefono`, `foto`, `numero_colegiado`, `especialidad`, `direccion_clinica`, `correo`) ya estaban presentes.
+
+---
+
+## 2. Backend (Lógica de Negocio)
+* **Controlador de Perfil (`perfilMedicoController.js`):**
+    * `obtenerPerfilMedico`: Retorna todos los campos del médico autenticado (excluye contraseña). Usa el `id` extraído del JWT por el middleware.
+    * `actualizarPerfilMedico`: Actualiza todos los campos editables. El campo `correo` es ignorado aunque se envíe en el cuerpo. Si se adjunta una nueva fotografía, elimina la anterior del disco y almacena la nueva.
+* **Rutas de API (`medicoRoutes.js`):** Se registraron dos endpoints nuevos bajo `/api/medico/perfil`, ambos protegidos con `verifyMedicoToken`:
+    * `GET /api/medico/perfil` → obtener perfil del médico autenticado
+    * `PUT /api/medico/perfil` → actualizar perfil (foto opcional vía `multipart/form-data`)
+* **Validaciones:** Unicidad de `dpi` y `numero_colegiado` manejada por restricciones de la base de datos; retorna error 400 con mensaje descriptivo si se detecta colisión.
+
+---
+
+## 3. Frontend (Interfaz de Usuario)
+* **Componente Creado:**
+    * `PerfilMedico.jsx`: Formulario con todos los campos del médico precargados desde `GET /api/medico/perfil`. El campo `correo` se muestra deshabilitado (solo lectura). Incluye previsualización de fotografía actual y selector para reemplazarla. Muestra mensajes de éxito o error según la respuesta del backend.
+* **Flujo de Navegación Actualizado:**
+    * `LoginMedico.jsx`: Tras el login exitoso, consulta `GET /api/medico/horarios`. Si el médico ya tiene horario configurado, redirige directamente a `/perfil-medico`; si no, redirige a `/horario-medico`.
+    * `HorarioMedico.jsx`: Al guardar o actualizar el horario exitosamente, redirige automáticamente a `/perfil-medico` tras 1.5 segundos.
+    * `PerfilMedico.jsx`: Incluye botón **"Editar Horario Medico"** que navega a `/horario-medico` y botón **"Cerrar Sesion"** que limpia el token del `localStorage` y redirige a `/login-medico`.
+* **Ruta registrada:** `/perfil-medico` añadida en `App.jsx`.

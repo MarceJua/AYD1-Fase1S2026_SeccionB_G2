@@ -36,6 +36,23 @@ Este documento detalla los requerimientos ágiles del sistema, estimaciones y cr
 
 ---
 
+
+### HU-004: Login de Administrador
+
+**Como** administrador de plataforma,
+**Quiero** ingresar al modulo de administrador,
+**Para** poder administrar, aprovar, revisar y denegar solicitudes de perfiles.
+
+- **Story Points:** 5
+- **Prioridad:** Alta (Sprint 1)
+- **Criterios de Aceptación:**
+  - El formulario debe de recibir la informacion de forma segura y clara.
+  - El sistemas debe de implemetar un sistema de doble autenticacion mediante una constrasenia en un archivo txt.
+  - La contraseñas deben de encriptarse.
+  - El administrador aceptara o denegara los nuevos registro de medicos en el sistema.
+
+---
+
 ### HU-005: Aceptar/Rechazar Usuarios
 
 **Como** administrador del sistema,

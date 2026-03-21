@@ -14,10 +14,26 @@ const LoginMedico = () => {
     e.preventDefault();
     try {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/medico/login`, formData);
-      localStorage.setItem("token", response.data.token);
+      const token = response.data.token;
+      localStorage.setItem("token", token);
       localStorage.setItem("usuario", JSON.stringify(response.data.usuario));
       setMensaje({ texto: "Inicio de sesión exitoso", tipo: "success" });
-      setTimeout(() => navigate("/horario-medico"), 1500); // para testing 
+
+      // Verificar si el médico ya tiene horario configurado
+      try {
+        const horarioRes = await axios.get(`${import.meta.env.VITE_API_URL}/medico/horarios`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        if (horarioRes.data.horario) {
+          setTimeout(() => navigate("/perfil-medico"), 1000);
+        } else {
+          setTimeout(() => navigate("/horario-medico"), 1000);
+        }
+      } catch {
+        
+        setTimeout(() => navigate("/horario-medico"), 1000);
+      }
 
     } catch (error) {
       setMensaje({ texto: (error.response?.data?.error || "Credenciales inválidas"), tipo: "error" });
