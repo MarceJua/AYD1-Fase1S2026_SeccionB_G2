@@ -17,7 +17,8 @@ const LoginMedico = () => {
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("usuario", JSON.stringify(response.data.usuario));
       setMensaje({ texto: "Inicio de sesión exitoso", tipo: "success" });
-      setTimeout(() => navigate("/dashboard"), 1500);
+      setTimeout(() => navigate("/horario-medico"), 1500); // para testing 
+
     } catch (error) {
       setMensaje({ texto: (error.response?.data?.error || "Credenciales inválidas"), tipo: "error" });
     }

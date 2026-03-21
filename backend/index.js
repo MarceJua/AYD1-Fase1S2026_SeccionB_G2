@@ -14,6 +14,8 @@ app.use("/uploads", express.static(path.join(__dirname, "src/uploads")));
 // Rutas
 app.use("/api/auth", require("./src/routes/authRoutes"));
 app.use("/api/paciente", require("./src/routes/pacienteRoutes"));
+app.use("/api/medico", require("./src/routes/medicoRoutes")); // HU-009: Horarios del médico
+
 
 // Iniciar servidor
 const PORT = process.env.PORT || 5000;
