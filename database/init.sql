@@ -37,4 +37,26 @@ CREATE TABLE IF NOT EXISTS medicos (
     rol VARCHAR(20) DEFAULT 'medico',
     estado VARCHAR(20) DEFAULT 'pendiente',
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-); 
+);
+
+-- Tabla de Citas (HU-007, referenciada en reportes HU-012)
+CREATE TABLE IF NOT EXISTS citas (
+  id          SERIAL PRIMARY KEY,
+  medico_id   INT REFERENCES medicos(id),
+  paciente_id INT REFERENCES pacientes(id),
+  fecha       DATE NOT NULL,
+  hora        TIME NOT NULL,
+  estado      VARCHAR(20) DEFAULT 'activa'
+);
+
+-- Tabla de Horario del Médico (HU-009)
+-- Un médico solo puede tener UN horario (medico_id UNIQUE)
+-- dias: arreglo de días, ej: {'lunes','miercoles','viernes'}
+-- hora_inicio / hora_fin: aplican igual para todos los días seleccionados
+CREATE TABLE IF NOT EXISTS horario_medico (
+  id          SERIAL PRIMARY KEY,
+  medico_id   INT UNIQUE REFERENCES medicos(id),
+  dias        TEXT[],
+  hora_inicio TIME NOT NULL,
+  hora_fin    TIME NOT NULL
+);
