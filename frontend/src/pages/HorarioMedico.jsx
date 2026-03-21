@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const DIAS_SEMANA = [
   { valor: "lunes", etiqueta: "Lunes" },
@@ -13,6 +14,7 @@ const DIAS_SEMANA = [
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 export default function HorarioMedico() {
+  const navigate = useNavigate();
   const [diasSeleccionados, setDiasSeleccionados] = useState([]);
   const [horaInicio, setHoraInicio] = useState("08:00");
   const [horaFin, setHoraFin] = useState("17:00");
@@ -100,6 +102,7 @@ export default function HorarioMedico() {
       if (resp.ok) {
         setTieneHorario(true);
         setMensaje({ tipo: "exito", texto: data.mensaje || "Horario guardado correctamente." });
+        setTimeout(() => navigate("/perfil-medico"), 1500);
       } else if (resp.status === 409 && data.citas_conflictivas) {
         // Hay citas activas fuera del nuevo rango
         setMensaje({

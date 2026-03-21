@@ -12,6 +12,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import DashboardPaciente from "./pages/DashboardPaciente";
 import PerfilPaciente from "./pages/PerfilPaciente";
 import HorarioMedico from "./pages/HorarioMedico"; // HU-009
+import PerfilMedico from "./pages/PerfilMedico"; // HU-013
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/perfil" element={<PerfilPaciente />} />
         <Route path="/horario-medico" element={<HorarioMedico />} /> {/* HU-009 */}
+        <Route path="/perfil-medico" element={<PerfilMedico />} /> {/* HU-013 */}
 
       </Routes>
     </BrowserRouter>
