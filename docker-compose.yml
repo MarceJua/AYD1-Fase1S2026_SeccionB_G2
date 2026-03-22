@@ -6,43 +6,48 @@ services:
     image: postgres:15-alpine
     container_name: saludplus_db
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password123 # Cambia esto por seguridad
-      POSTGRES_DB: saludplus_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
       - "5432:5432"
     volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql # Crea la tabla para medicos
       - pgdata:/var/lib/postgresql/data # Esto evita que se borren los datos al apagar el contenedor
 
   # 2. SERVICIO DE BACKEND
   backend:
     build: 
-      context: ./backend # Asume que tu código backend está en esta carpeta
+      context: ./backend
     container_name: saludplus_backend
     ports:
       - "5000:5000"
     environment:
       - PORT=5000
-      - DB_HOST=db # Docker resuelve esto automáticamente
-      - DB_USER=admin
-      - DB_PASSWORD=password123
-      - DB_NAME=saludplus_db
+      - DB_HOST=db
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
       - DB_PORT=5432
       - JWT_SECRET=tu_secreto_aqui
     depends_on:
       - db # Espera a que la base de datos esté lista
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/src/uploads:/app/src/uploads # Esto sincroniza la carpeta del contenedor con tu PC
 
   # 3. SERVICIO DE FRONTEND
   frontend:
     build: 
-      context: ./frontend # Asume que tu código frontend está en esta carpeta
+      context: ./frontend
     container_name: saludplus_frontend
     ports:
-      - "5173:5173" # Puerto por defecto de Vite
+      - "5173:5173"
     environment:
       - VITE_API_URL=http://localhost:5000/api
     depends_on:
-      - backend
+      - backend # Espera a que el backend esté listo
 
 # Declaración de volúmenes persistentes
 volumes:

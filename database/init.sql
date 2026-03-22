@@ -1,0 +1,62 @@
+-- database/init.sql
+
+-- Tabla de Pacientes (HU-001)
+CREATE TABLE IF NOT EXISTS pacientes (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    apellido VARCHAR(100) NOT NULL,
+    dpi VARCHAR(20) UNIQUE NOT NULL,
+    genero VARCHAR(20),
+    direccion VARCHAR(200),
+    telefono VARCHAR(20),
+    fecha_nacimiento DATE,
+    foto VARCHAR(255),
+    correo VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    rol VARCHAR(20) DEFAULT 'paciente',
+    estado VARCHAR(20) DEFAULT 'pendiente',
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla de Médicos (HU-002)
+CREATE TABLE IF NOT EXISTS medicos (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    apellido VARCHAR(100) NOT NULL,
+    dpi VARCHAR(13) UNIQUE NOT NULL,
+    fecha_nacimiento DATE NOT NULL,
+    genero VARCHAR(20) NOT NULL,
+    direccion TEXT NOT NULL,
+    telefono VARCHAR(15) NOT NULL,
+    foto TEXT NOT NULL,
+    numero_colegiado VARCHAR(20) UNIQUE NOT NULL,
+    especialidad VARCHAR(100) NOT NULL,
+    direccion_clinica TEXT NOT NULL,
+    correo VARCHAR(100) UNIQUE NOT NULL,
+    contrasena TEXT NOT NULL,
+    rol VARCHAR(20) DEFAULT 'medico',
+    estado VARCHAR(20) DEFAULT 'pendiente',
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla de Citas (HU-007, referenciada en reportes HU-012)
+CREATE TABLE IF NOT EXISTS citas (
+  id          SERIAL PRIMARY KEY,
+  medico_id   INT REFERENCES medicos(id),
+  paciente_id INT REFERENCES pacientes(id),
+  fecha       DATE NOT NULL,
+  hora        TIME NOT NULL,
+  estado      VARCHAR(20) DEFAULT 'activa'
+);
+
+-- Tabla de Horario del Médico (HU-009)
+-- Un médico solo puede tener UN horario (medico_id UNIQUE)
+-- dias: arreglo de días, ej: {'lunes','miercoles','viernes'}
+-- hora_inicio / hora_fin: aplican igual para todos los días seleccionados
+CREATE TABLE IF NOT EXISTS horario_medico (
+  id          SERIAL PRIMARY KEY,
+  medico_id   INT UNIQUE REFERENCES medicos(id),
+  dias        TEXT[],
+  hora_inicio TIME NOT NULL,
+  hora_fin    TIME NOT NULL
+);
