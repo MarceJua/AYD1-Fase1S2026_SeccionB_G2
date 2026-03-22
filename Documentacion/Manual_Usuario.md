@@ -47,6 +47,13 @@ En esta parte el paciente podrá editar su perfil precionando el botón "Perfil 
   
 ![Perfil Pacientes](./imagenes/Perfil_Pacientes.png)
 
+### 2.4 Prototipo Rol Paciente
+Este es el prototipo en el que el equipo de desarrollo se baso para crear la plataforma para el Paciente:
+
+![Prototipo_Adminstrador](./imagenes/Prototipo_Medic_Paci_Marvelapp.png)
+
+* **Link:** [Prototipo_Médicos](https://marvelapp.com/prototype/75fgcdh)
+
 ---
 
 ## 3. Módulo de Médico 
@@ -91,6 +98,13 @@ En este módulo el usuario de rol médico podrías ver su perfil profecional, ge
 
 ![Correo de Cancelación](./imagenes/)
 
+### 3.4 Prototipo Médicos
+Este es el prototipo en el que el equipo de desarrollo se baso para crear la plataforma para el médico:
+
+![Prototipo_Adminstrador](./imagenes/Prototipo_Medic_Paci_Marvelapp.png)
+
+* **Link:** [Prototipo_Médicos](https://marvelapp.com/prototype/75fgcdh)
+
 ---
 
 ## 4. Módulo de Administrador
@@ -131,3 +145,11 @@ En esta sección se podrá visualizar 2 tipos de reportes uan de `Gráfica de Ba
 
 ![Reporte_Pie_Chart](./imagenes/)
 
+---
+
+### 4.4 Prototipo Rol - Adminstrador
+El siguiente prototifue fue realizado en la plataforma `Marvelapp.com`. Este prototipo ejemplifica de manera iteractiva lo que puede realizarse con el rol de `Administrador`, es fácil de utilizar y se puede interactuar con el prototipo accediendo al link debajo de la imagen:
+
+![Prototipo_Adminstrador](./imagenes/Prototipo_Administrador_Marvelapp.png)
+
+* **Link:** [Prototipo_Adminsitrador](https://marvelapp.com/prototype/35c270f6)
