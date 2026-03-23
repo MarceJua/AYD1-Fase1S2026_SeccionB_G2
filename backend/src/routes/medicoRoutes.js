@@ -18,6 +18,7 @@ const {
   obtenerCitasPendientes,
   atenderPaciente,
   cancelarCita,
+  obtenerHistorialCitas,
 } = require("../controllers/citasMedicoController");
 
 // GET  /api/medico/citas/pendientes -> obtener citas pendientes del médico autenticado
@@ -31,6 +32,9 @@ router.get("/horarios", verifyMedicoToken, obtenerHorario);
 
 // PUT  /api/medico/citas/:id/cancelar -> cancelar cita (cambia estado a 'cancelada')
 router.put("/citas/:id/cancelar", verifyMedicoToken, cancelarCita);
+
+// GET  /api/medico/citas/historial -> obtener historial de citas atendidas y canceladas
+router.get("/citas/historial", verifyMedicoToken, obtenerHistorialCitas);
 
 // POST /api/medico/horarios -> guardar horario por primera vez
 router.post("/horarios", verifyMedicoToken, guardarHorario);

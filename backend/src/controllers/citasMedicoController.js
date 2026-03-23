@@ -164,8 +164,40 @@ const cancelarCita = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/medico/citas/historial
+ * Obtiene el historial de citas (Atendido, Cancelada por médico, Cancelada por paciente)
+ */
+const obtenerHistorialCitas = async (req, res) => {
+  const medicoId = req.medico.id;
+
+  try {
+    const query = `
+      SELECT 
+        c.id AS cita_id, 
+        c.fecha, 
+        c.hora, 
+        c.estado, 
+        p.nombre AS paciente_nombre, 
+        p.apellido AS paciente_apellido
+      FROM citas c
+      JOIN pacientes p ON c.paciente_id = p.id
+      WHERE c.medico_id = $1 AND c.estado != 'activa'
+      ORDER BY c.fecha DESC, c.hora DESC
+    `;
+
+    const result = await pool.query(query, [medicoId]);
+
+    res.json({ historial: result.rows });
+  } catch (error) {
+    console.error("Error al obtener el historial de citas:", error);
+    res.status(500).json({ error: "Error interno al obtener el historial." });
+  }
+};
+
 module.exports = {
   obtenerCitasPendientes,
   atenderPaciente,
   cancelarCita,
+  obtenerHistorialCitas,
 };

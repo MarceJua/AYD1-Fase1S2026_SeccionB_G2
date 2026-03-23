@@ -8,6 +8,8 @@ const DashboardMedico = () => {
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
+  const [historial, setHistorial] = useState([]);
+  const [vistaActiva, setVistaActiva] = useState('pendientes');
   const [citaSeleccionada, setCitaSeleccionada] = useState(null);
   const [tratamiento, setTratamiento] = useState('');
   const [mensajeExito, setMensajeExito] = useState('');
@@ -45,6 +47,12 @@ const DashboardMedico = () => {
     fetchCitas();
   }, [navigate]);
 
+  useEffect(() => {
+    if (vistaActiva === "historial") {
+      fetchHistorial();
+    }
+  }, [vistaActiva]);
+
   const formatearFecha = (fechaISO) => {
     const fecha = new Date(fechaISO);
     return fecha.toLocaleDateString("es-ES", { timeZone: "UTC" });
@@ -58,6 +66,23 @@ const DashboardMedico = () => {
       </div>
     );
   }
+
+  const fetchHistorial = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`${API}/medico/citas/historial`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setHistorial(data.historial || []);
+      } else {
+        setError(data.error || "Error al obtener el historial de citas.");
+      }
+    } catch {
+      setError("Error de conexión al obtener el historial.");
+    }
+  };
 
   const abrirModal = (cita) => {
   setCitaSeleccionada(cita);
@@ -95,10 +120,14 @@ const handleAtenderCita = async (e) => {
       setTimeout(() => setMensajeExito(''), 3000); // Ocultar después de 3s
       
       // 2. Quitar la cita de la tabla (actualizar el estado visualmente)
-      setCitas(citas.filter(c => c.cita_id !== citaSeleccionada.cita_id));
+      setCitas((prevCitas) => prevCitas.filter((c) => c.cita_id !== citaSeleccionada.cita_id));
       
       // 3. Cerrar el modal
       cerrarModal();
+
+      if (vistaActiva === "historial") {
+        fetchHistorial();
+      }
 
         } else {
         setError(data.error);
@@ -170,41 +199,97 @@ const handleCancelarCita = async (cita) => {
 
       <div style={styles.card}>
         {error && <div style={styles.alertError}>{error}</div>}
+        {mensajeExito && <div style={styles.alertExito}>{mensajeExito}</div>}
 
-        {citas.length === 0 && !error ? (
+        <div style={styles.vistaSwitch}>
+          <button
+            style={{ ...styles.btnVista, ...(vistaActiva === "pendientes" ? styles.btnVistaActiva : {}) }}
+            onClick={() => setVistaActiva("pendientes")}
+          >
+            Citas Pendientes
+          </button>
+          <button
+            style={{ ...styles.btnVista, ...(vistaActiva === "historial" ? styles.btnVistaActiva : {}) }}
+            onClick={() => setVistaActiva("historial")}
+          >
+            Historial de Citas
+          </button>
+        </div>
+
+        {vistaActiva === "pendientes" && citas.length === 0 && !error ? (
           <p style={styles.sinCitas}>No tienes citas pendientes por el momento.</p>
         ) : (
-          <div style={styles.tablaWrapper}>
-            <table style={styles.citasTabla}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>Fecha</th>
-                  <th style={styles.th}>Hora</th>
-                  <th style={styles.th}>Paciente</th>
-                  <th style={styles.th}>Motivo</th>
-                  <th style={styles.th}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {citas.map((cita) => (
-                  <tr key={cita.cita_id}>
-                    <td style={styles.td}>{formatearFecha(cita.fecha)}</td>
-                    <td style={styles.td}>{cita.hora}</td>
-                    <td style={styles.td}>{`${cita.paciente_nombre} ${cita.paciente_apellido}`}</td>
-                    <td style={styles.td}>{cita.motivo}</td>
-                    <td style={styles.tdAcciones}>
-                      <button style={styles.btnAtender} onClick={() => abrirModal(cita)}>
-                        Atender
-                      </button>
-                      <button style={styles.btnCancelar} onClick={() => handleCancelarCita(cita)}>
-                        Cancelar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {vistaActiva === "pendientes" ? (
+              <div style={styles.tablaWrapper}>
+                <table style={styles.citasTabla}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>Fecha</th>
+                      <th style={styles.th}>Hora</th>
+                      <th style={styles.th}>Paciente</th>
+                      <th style={styles.th}>Motivo</th>
+                      <th style={styles.th}>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {citas.map((cita) => (
+                      <tr key={cita.cita_id}>
+                        <td style={styles.td}>{formatearFecha(cita.fecha)}</td>
+                        <td style={styles.td}>{cita.hora}</td>
+                        <td style={styles.td}>{`${cita.paciente_nombre} ${cita.paciente_apellido}`}</td>
+                        <td style={styles.td}>{cita.motivo}</td>
+                        <td style={styles.tdAcciones}>
+                          <button style={styles.btnAtender} onClick={() => abrirModal(cita)}>
+                            Atender
+                          </button>
+                          <button style={styles.btnCancelar} onClick={() => handleCancelarCita(cita)}>
+                            Cancelar
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : historial.length === 0 ? (
+              <p style={styles.sinCitas}>No hay citas en el historial todavía.</p>
+            ) : (
+              <div style={styles.tablaWrapper}>
+                <table style={styles.citasTabla}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>Fecha</th>
+                      <th style={styles.th}>Hora</th>
+                      <th style={styles.th}>Paciente</th>
+                      <th style={styles.th}>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {historial.map((cita) => (
+                      <tr key={cita.cita_id}>
+                        <td style={styles.td}>{formatearFecha(cita.fecha)}</td>
+                        <td style={styles.td}>{cita.hora}</td>
+                        <td style={styles.td}>{`${cita.paciente_nombre} ${cita.paciente_apellido}`}</td>
+                        <td style={styles.td}>
+                          <span
+                            style={{
+                              ...styles.estadoBadge,
+                              ...(cita.estado?.toLowerCase().includes("atendido")
+                                ? styles.estadoAtendido
+                                : styles.estadoCancelado),
+                            }}
+                          >
+                            {cita.estado}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
         )}
 
         {/* Modal para Atender Paciente */}
@@ -364,6 +449,36 @@ const styles = {
     fontSize: 15,
     margin: 0,
   },
+  alertExito: {
+    background: "rgba(34, 197, 94, 0.1)",
+    border: "1px solid rgba(34, 197, 94, 0.4)",
+    borderRadius: 10,
+    color: "#86efac",
+    padding: "12px 16px",
+    fontSize: 14,
+    marginBottom: 20,
+  },
+  vistaSwitch: {
+    display: "flex",
+    gap: 10,
+    marginBottom: 18,
+    flexWrap: "wrap",
+  },
+  btnVista: {
+    background: "rgba(15, 23, 42, 0.6)",
+    border: "1px solid rgba(148,163,184,0.2)",
+    color: "#cbd5e1",
+    borderRadius: 10,
+    padding: "8px 14px",
+    fontSize: 13,
+    cursor: "pointer",
+    fontWeight: 600,
+  },
+  btnVistaActiva: {
+    background: "rgba(56, 189, 248, 0.15)",
+    border: "1px solid rgba(56,189,248,0.5)",
+    color: "#e0f2fe",
+  },
   tablaWrapper: {
     overflowX: "auto",
   },
@@ -385,6 +500,25 @@ const styles = {
     padding: "10px 12px",
     borderBottom: "1px solid rgba(148,163,184,0.12)",
     verticalAlign: "top",
+  },
+  estadoBadge: {
+    display: "inline-block",
+    borderRadius: 999,
+    padding: "4px 10px",
+    fontSize: 12,
+    fontWeight: 700,
+    border: "1px solid transparent",
+    textTransform: "capitalize",
+  },
+  estadoAtendido: {
+    background: "rgba(34, 197, 94, 0.15)",
+    border: "1px solid rgba(34,197,94,0.5)",
+    color: "#86efac",
+  },
+  estadoCancelado: {
+    background: "rgba(239, 68, 68, 0.15)",
+    border: "1px solid rgba(248,113,113,0.55)",
+    color: "#fecaca",
   },
   tdAcciones: {
     display: "flex",
