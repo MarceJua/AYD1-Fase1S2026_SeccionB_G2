@@ -7,6 +7,10 @@ const DashboardMedico = () => {
   const [citas, setCitas] = useState([]);
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(true);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [citaSeleccionada, setCitaSeleccionada] = useState(null);
+  const [tratamiento, setTratamiento] = useState('');
+  const [mensajeExito, setMensajeExito] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -54,6 +58,55 @@ const DashboardMedico = () => {
       </div>
     );
   }
+
+  const abrirModal = (cita) => {
+  setCitaSeleccionada(cita);
+  setTratamiento('');
+  setModalVisible(true);
+};
+
+// Cierra el modal
+const cerrarModal = () => {
+  setModalVisible(false);
+  setCitaSeleccionada(null);
+  setTratamiento('');
+};
+
+// Envía el formulario al backend
+const handleAtenderCita = async (e) => {
+  e.preventDefault();
+  const token = localStorage.getItem('token');
+
+  try {
+    const response = await fetch(`http://localhost:5000/api/medico/citas/${citaSeleccionada.cita_id}/atender`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ tratamiento })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      // 1. Mostrar mensaje de éxito
+      setMensajeExito(data.mensaje);
+      setTimeout(() => setMensajeExito(''), 3000); // Ocultar después de 3s
+      
+      // 2. Quitar la cita de la tabla (actualizar el estado visualmente)
+      setCitas(citas.filter(c => c.cita_id !== citaSeleccionada.cita_id));
+      
+      // 3. Cerrar el modal
+      cerrarModal();
+
+        } else {
+        setError(data.error);
+        }
+      } catch {
+        setError('Error de conexión al guardar el tratamiento.');
+    }
+};
 
   return (
     <div style={styles.pagina}>
@@ -107,13 +160,70 @@ const DashboardMedico = () => {
                     <td style={styles.td}>{`${cita.paciente_nombre} ${cita.paciente_apellido}`}</td>
                     <td style={styles.td}>{cita.motivo}</td>
                     <td style={styles.tdAcciones}>
-                      <button style={styles.btnAtender}>Atender</button>
+                      <button style={styles.btnAtender} onClick={() => abrirModal(cita)}>
+                        Atender
+                      </button>
                       <button style={styles.btnCancelar}>Cancelar</button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Modal para Atender Paciente */}
+        {modalVisible && (
+          <div style={styles.modalOverlay} onClick={cerrarModal}>
+            <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+              <h2 style={styles.modalTitulo}>Atender Paciente</h2>
+              
+              <div style={styles.modalInfo}>
+                <p style={styles.modalParagrafo}>
+                  <strong style={styles.modalLabel}>Paciente:</strong> {citaSeleccionada?.paciente_nombre} {citaSeleccionada?.paciente_apellido}
+                </p>
+                <p style={styles.modalParagrafo}>
+                  <strong style={styles.modalLabel}>Motivo:</strong> {citaSeleccionada?.motivo}
+                </p>
+              </div>
+              
+              <form onSubmit={handleAtenderCita}>
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>Tratamiento a seguir:</label>
+                  <textarea 
+                    style={styles.textarea}
+                    required
+                    rows="5"
+                    placeholder="Ingrese el diagnóstico y tratamiento recetado..."
+                    value={tratamiento}
+                    onChange={(e) => setTratamiento(e.target.value)}
+                  ></textarea>
+                </div>
+                <div style={styles.modalAcciones}>
+                  <button 
+                    type="button" 
+                    style={styles.btnModalCancelar}
+                    onClick={cerrarModal}
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit" 
+                    style={styles.btnModalGuardar}
+                  >
+                    Guardar Tratamiento
+                  </button>
+                </div>
+              </form>
+
+              {/* Mensaje de éxito */}
+              {mensajeExito && (
+                <div style={styles.alertExitoModal}>
+                  <span>✅</span>
+                  <span>{mensajeExito}</span>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -266,5 +376,119 @@ const styles = {
     fontSize: 13,
     cursor: "pointer",
     fontWeight: 600,
+  },
+  // ─── Modal Styles ─────────────────────────────────────────────
+  modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    background: "rgba(0, 0, 0, 0.7)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+    backdropFilter: "blur(4px)",
+  },
+  modalContent: {
+    background: "rgba(30, 41, 59, 0.95)",
+    border: "1px solid rgba(148, 163, 184, 0.25)",
+    borderRadius: 16,
+    padding: "28px",
+    maxWidth: 500,
+    width: "90%",
+    boxShadow: "0 20px 60px rgba(0, 0, 0, 0.5)",
+    backdropFilter: "blur(10px)",
+    animation: "slideIn 0.3s ease-out",
+  },
+  modalTitulo: {
+    color: "#f1f5f9",
+    fontSize: 20,
+    fontWeight: 700,
+    margin: "0 0 16px",
+    borderBottom: "1px solid rgba(148, 163, 184, 0.15)",
+    paddingBottom: 12,
+  },
+  modalInfo: {
+    background: "rgba(15, 23, 42, 0.5)",
+    borderRadius: 10,
+    padding: "12px 16px",
+    marginBottom: 20,
+    border: "1px solid rgba(148, 163, 184, 0.1)",
+  },
+  modalParagrafo: {
+    color: "#cbd5e1",
+    fontSize: 13,
+    margin: "6px 0",
+  },
+  modalLabel: {
+    color: "#e2e8f0",
+    fontWeight: 600,
+  },
+  formGroup: {
+    marginBottom: 20,
+  },
+  formLabel: {
+    display: "block",
+    color: "#94a3b8",
+    fontSize: 13,
+    fontWeight: 600,
+    marginBottom: 8,
+  },
+  textarea: {
+    width: "100%",
+    background: "rgba(15, 23, 42, 0.8)",
+    border: "1px solid rgba(148, 163, 184, 0.25)",
+    borderRadius: 10,
+    color: "#f1f5f9",
+    fontSize: 14,
+    padding: "12px",
+    fontFamily: "'Segoe UI', system-ui, sans-serif",
+    outline: "none",
+    resize: "vertical",
+    boxSizing: "border-box",
+  },
+  modalAcciones: {
+    display: "flex",
+    gap: 12,
+    justifyContent: "flex-end",
+    marginTop: 20,
+  },
+  btnModalCancelar: {
+    background: "rgba(148, 163, 184, 0.1)",
+    border: "1px solid rgba(148, 163, 184, 0.25)",
+    color: "#cbd5e1",
+    borderRadius: 10,
+    padding: "10px 20px",
+    fontSize: 14,
+    cursor: "pointer",
+    fontWeight: 600,
+    transition: "all 0.2s",
+  },
+  btnModalGuardar: {
+    background: "linear-gradient(135deg, #0284c7, #38bdf8)",
+    border: "none",
+    color: "#fff",
+    borderRadius: 10,
+    padding: "10px 20px",
+    fontSize: 14,
+    cursor: "pointer",
+    fontWeight: 700,
+    boxShadow: "0 4px 15px rgba(56, 189, 248, 0.3)",
+    transition: "all 0.2s",
+  },
+  alertExitoModal: {
+    background: "rgba(34, 197, 94, 0.1)",
+    border: "1px solid rgba(34, 197, 94, 0.4)",
+    borderRadius: 10,
+    color: "#86efac",
+    padding: "12px 16px",
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 16,
+    fontSize: 13,
+    fontWeight: 500,
   },
 };

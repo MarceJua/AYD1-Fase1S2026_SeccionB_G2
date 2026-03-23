@@ -16,10 +16,14 @@ const {
 
 const {
   obtenerCitasPendientes,
+  atenderPaciente,
 } = require("../controllers/citasMedicoController");
 
 // GET  /api/medico/citas/pendientes -> obtener citas pendientes del médico autenticado
 router.get("/citas/pendientes", verifyMedicoToken, obtenerCitasPendientes);
+
+// PUT  /api/medico/citas/:id/atender -> atender cita y guardar tratamiento
+router.put("/citas/:id/atender", verifyMedicoToken, atenderPaciente);
 
 // GET  /api/medico/horarios ->  obtener horario actual del médico autenticado
 router.get("/horarios", verifyMedicoToken, obtenerHorario);

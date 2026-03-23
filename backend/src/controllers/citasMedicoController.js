@@ -33,6 +33,47 @@ const obtenerCitasPendientes = async (req, res) => {
   }
 };
 
+/**
+ * PUT /api/medico/citas/:id/atender
+ * Cambia el estado de la cita a 'Atendido' y guarda el tratamiento
+ */
+const atenderPaciente = async (req, res) => {
+  const medicoId = req.medico.id;
+  const citaId = req.params.id;
+  const { tratamiento } = req.body;
+
+  if (!tratamiento || tratamiento.trim() === "") {
+    return res.status(400).json({ error: "El tratamiento es obligatorio." });
+  }
+
+  try {
+    const updateQuery = `
+      UPDATE citas
+      SET estado = 'Atendido', tratamiento = $1
+      WHERE id = $2 AND medico_id = $3 AND estado = 'activa'
+      RETURNING id
+    `;
+
+    const result = await pool.query(updateQuery, [
+      tratamiento,
+      citaId,
+      medicoId,
+    ]);
+
+    if (result.rowCount === 0) {
+      return res
+        .status(404)
+        .json({ error: "Cita no encontrada o ya fue procesada." });
+    }
+
+    res.json({ mensaje: "Paciente atendido correctamente." });
+  } catch (error) {
+    console.error("Error al atender paciente:", error);
+    res.status(500).json({ error: "Error interno al actualizar la cita." });
+  }
+};
+
 module.exports = {
   obtenerCitasPendientes,
+  atenderPaciente,
 };

@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS citas (
   fecha       DATE NOT NULL,
   hora        TIME NOT NULL,
   motivo      TEXT,
+  tratamiento TEXT,
   estado      VARCHAR(20) DEFAULT 'activa'
 );
 
