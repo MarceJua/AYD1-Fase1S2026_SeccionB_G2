@@ -115,3 +115,32 @@ npm install bcryptjs jsonwebtoken
     * `HorarioMedico.jsx`: Al guardar o actualizar el horario exitosamente, redirige automáticamente a `/perfil-medico` tras 1.5 segundos.
     * `PerfilMedico.jsx`: Incluye botón **"Editar Horario Medico"** que navega a `/horario-medico` y botón **"Cerrar Sesion"** que limpia el token del `localStorage` y redirige a `/login-medico`.
 * **Ruta registrada:** `/perfil-medico` añadida en `App.jsx`.
+
+---
+
+# HU-018 Resumen de Acciones Realizadas
+
+## 1. Base de Datos (Persistencia)
+* **Sin cambios de esquema:** Se reutilizaron las tablas `horario_medico` y `citas` ya existentes. La consulta de slots ocupa los campos `medico_id`, `dias`, `hora_inicio`, `hora_fin` (de `horario_medico`) y `fecha`, `hora`, `estado` (de `citas`).
+
+---
+
+## 2. Backend (Lógica de Negocio)
+* **Nuevo endpoint en `pacienteRoutes.js`:**
+    * `GET /api/paciente/medicos/:id/horario` — Retorna el horario configurado del médico (días y rango horario). Si se proporciona el query param `?fecha=YYYY-MM-DD`, determina si el médico atiende ese día de la semana y genera los slots horarios (intervalos de 1 hora entre `hora_inicio` y `hora_fin`), marcando cada uno como disponible u ocupado según las citas activas existentes en esa fecha.
+* **Lógica de slots:** La generación de slots recorre minuto a minuto en saltos de 60, desde `hora_inicio` (inclusive) hasta `hora_fin` (exclusive), comparando cada franja con las horas de citas activas del médico para esa fecha.
+* **Validación de día:** Se usa `Date.getUTCDay()` con la fecha en formato `T12:00:00` para evitar desplazamientos de zona horaria al determinar el día de la semana.
+
+---
+
+## 3. Frontend (Interfaz de Usuario)
+* **Componente modificado:**
+    * `DashboardPaciente.jsx`: Se agregó el botón **"Ver Horario"** en cada tarjeta de médico (independiente del botón "Programar Cita"). Al hacer clic abre un modal con:
+        * Nombre y especialidad del médico.
+        * Días de atención y rango horario configurado.
+        * Selector de fecha para filtrar disponibilidad.
+        * Grilla de slots con código de color: verde (Libre) y rojo (Ocupado).
+        * Mensaje de advertencia si el médico no atiende el día seleccionado.
+        * Si el médico no tiene horario configurado, el modal muestra únicamente el mensaje informativo y el botón **"Cerrar"** (sin opción de programar cita).
+        * Si el médico sí tiene horario, el modal incluye el botón **"Programar Cita"** que cierra el modal de horario y abre directamente el modal de agendamiento (HU-008).
+* **Estilos agregados en `Dashboard.css`:** Clases para el modal ampliado (`.modal-horario`), la grilla de slots (`.slots-grid`, `.slot`, `.slot-disponible`, `.slot-ocupado`), la leyenda visual, el mensaje de día no laborable (`.horario-no-atiende`) y los botones por tarjeta (`.card-buttons`, `.btn-horario`).
