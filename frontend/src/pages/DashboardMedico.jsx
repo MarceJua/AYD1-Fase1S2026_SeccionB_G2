@@ -108,6 +108,39 @@ const handleAtenderCita = async (e) => {
     }
 };
 
+// Función para cancelar la cita
+const handleCancelarCita = async (cita) => {
+  // Pedimos confirmación para evitar clics accidentales
+  const confirmacion = window.confirm(`¿Estás seguro de que deseas cancelar la cita con ${cita.paciente_nombre}? Se enviará un correo electrónico de notificación automáticamente.`);
+
+  if (!confirmacion) return;
+
+  const token = localStorage.getItem("token");
+
+  try {
+    const response = await fetch(`${API}/medico/citas/${cita.cita_id}/cancelar`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      setMensajeExito(data.mensaje);
+      setTimeout(() => setMensajeExito(""), 4000);
+
+      // Quitar la cita de la tabla visualmente
+      setCitas((prevCitas) => prevCitas.filter((c) => c.cita_id !== cita.cita_id));
+    } else {
+      setError(data.error);
+    }
+  } catch {
+    setError("Error de conexión al cancelar la cita.");
+  }
+};
+
   return (
     <div style={styles.pagina}>
       <div style={styles.header}>
@@ -163,7 +196,9 @@ const handleAtenderCita = async (e) => {
                       <button style={styles.btnAtender} onClick={() => abrirModal(cita)}>
                         Atender
                       </button>
-                      <button style={styles.btnCancelar}>Cancelar</button>
+                      <button style={styles.btnCancelar} onClick={() => handleCancelarCita(cita)}>
+                        Cancelar
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -368,14 +403,15 @@ const styles = {
     fontWeight: 600,
   },
   btnCancelar: {
-    background: "rgba(239, 68, 68, 0.12)",
-    border: "1px solid rgba(239,68,68,0.5)",
-    color: "#fca5a5",
+    background: "rgba(239, 68, 68, 0.16)",
+    border: "1px solid rgba(248,113,113,0.55)",
+    color: "#fecaca",
     borderRadius: 8,
     padding: "6px 12px",
     fontSize: 13,
     cursor: "pointer",
     fontWeight: 600,
+    boxShadow: "0 2px 10px rgba(239,68,68,0.2)",
   },
   // ─── Modal Styles ─────────────────────────────────────────────
   modalOverlay: {
@@ -456,15 +492,16 @@ const styles = {
     marginTop: 20,
   },
   btnModalCancelar: {
-    background: "rgba(148, 163, 184, 0.1)",
-    border: "1px solid rgba(148, 163, 184, 0.25)",
-    color: "#cbd5e1",
+    background: "rgba(239, 68, 68, 0.16)",
+    border: "1px solid rgba(248,113,113,0.55)",
+    color: "#fecaca",
     borderRadius: 10,
     padding: "10px 20px",
     fontSize: 14,
     cursor: "pointer",
     fontWeight: 600,
     transition: "all 0.2s",
+    boxShadow: "0 2px 10px rgba(239,68,68,0.2)",
   },
   btnModalGuardar: {
     background: "linear-gradient(135deg, #0284c7, #38bdf8)",

@@ -30,6 +30,8 @@ services:
       - DB_NAME=${DB_NAME}
       - DB_PORT=5432
       - JWT_SECRET=tu_secreto_aqui
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_PASS}
     depends_on:
       - db # Espera a que la base de datos esté lista
     volumes:
