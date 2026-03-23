@@ -254,3 +254,291 @@
   cursor: pointer;
   flex: 1;
 }
+
+/* =========================================
+   Tabs de navegacion del dashboard (HU-019)
+   ========================================= */
+.dashboard-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 12px 28px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.tab-btn:hover {
+  color: #0056b3;
+}
+
+.tab-btn-activo {
+  color: #0056b3;
+  border-bottom-color: #0056b3;
+}
+
+/* =========================================
+   Vista Mis Citas (HU-019)
+   ========================================= */
+.mis-citas-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.mis-citas-titulo {
+  font-size: 22px;
+  color: #0056b3;
+  margin: 0;
+}
+
+.citas-cargando,
+.citas-vacio {
+  text-align: center;
+  color: #777;
+  font-size: 16px;
+  padding: 40px 0;
+  font-style: italic;
+}
+
+.citas-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.cita-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px 22px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-left: 4px solid #0056b3;
+}
+
+.cita-fila {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.cita-fila-motivo {
+  align-items: flex-start;
+}
+
+.cita-etiqueta {
+  font-weight: 600;
+  color: #444;
+  font-size: 13px;
+  white-space: nowrap;
+  min-width: 58px;
+}
+
+.cita-valor {
+  color: #222;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* =========================================
+   Botones de tarjeta de medico (HU-018)
+   ========================================= */
+.card-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.btn-horario {
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  width: 100%;
+}
+
+.btn-horario:hover {
+  background-color: #138496;
+}
+
+/* =========================================
+   Modal de Horario (HU-018)
+   ========================================= */
+.modal-horario {
+  width: 520px;
+  max-width: 95vw;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.medico-especialidad-modal {
+  color: #0056b3;
+  font-weight: 600;
+  margin-bottom: 20px;
+  font-size: 15px;
+}
+
+.horario-cargando {
+  text-align: center;
+  color: #555;
+  padding: 15px 0;
+}
+
+.horario-sin-datos {
+  text-align: center;
+  color: #777;
+  padding: 15px 0;
+  font-style: italic;
+}
+
+.horario-info {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.horario-general {
+  background-color: #f0f4f8;
+  border-radius: 8px;
+  padding: 15px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.horario-dato {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.horario-etiqueta {
+  font-weight: 600;
+  color: #444;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.horario-valor {
+  color: #222;
+  font-size: 15px;
+}
+
+.horario-filtro-fecha {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-fecha-filtro {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 15px;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.horario-slots-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.horario-no-atiende {
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #856404;
+  font-weight: 500;
+  text-align: center;
+}
+
+.slots-titulo {
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.slots-leyenda {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.slot-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.slot-disponible-legend {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.slot-ocupado-legend {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 8px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  gap: 4px;
+}
+
+.slot-estado {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.slot-disponible {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.slot-ocupado {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
