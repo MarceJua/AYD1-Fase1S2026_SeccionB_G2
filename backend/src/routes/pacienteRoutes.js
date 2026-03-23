@@ -2,6 +2,10 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../config/db"); // Tu conexión a la BD
+const { programarCita } = require("../controllers/pacienteController");
+
+// Ruta para programar cita (HU-008)
+router.post("/programar-cita", programarCita);
 
 // Obtener todos los médicos aprobados
 router.get("/medicos", async (req, res) => {
