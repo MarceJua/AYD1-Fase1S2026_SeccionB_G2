@@ -20,6 +20,101 @@ router.get("/medicos", async (req, res) => {
   }
 });
 
+// HU-018: Obtener horario de un médico específico con slots para una fecha
+router.get("/medicos/:id/horario", async (req, res) => {
+  const { id } = req.params;
+  const { fecha } = req.query;
+
+  try {
+    const horarioRes = await pool.query(
+      "SELECT dias, hora_inicio, hora_fin FROM horario_medico WHERE medico_id = $1",
+      [id]
+    );
+
+    if (horarioRes.rows.length === 0) {
+      return res.json({ horario: null });
+    }
+
+    const horario = {
+      dias: horarioRes.rows[0].dias,
+      hora_inicio: horarioRes.rows[0].hora_inicio.slice(0, 5),
+      hora_fin: horarioRes.rows[0].hora_fin.slice(0, 5),
+    };
+
+    if (!fecha) {
+      return res.json({ horario });
+    }
+
+    const diasSemana = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+    const diaSeleccionado = diasSemana[new Date(fecha + "T12:00:00").getDay()];
+
+    if (!horario.dias.includes(diaSeleccionado)) {
+      return res.json({
+        horario,
+        fecha,
+        atiende_ese_dia: false,
+        dia_semana: diaSeleccionado,
+        slots: [],
+      });
+    }
+
+    const citasRes = await pool.query(
+      "SELECT hora FROM citas WHERE medico_id = $1 AND fecha = $2 AND estado = 'activa'",
+      [id, fecha]
+    );
+
+    const horasOcupadas = citasRes.rows.map((c) => c.hora.slice(0, 5));
+
+    const slots = [];
+    const [hIni, mIni] = horario.hora_inicio.split(":").map(Number);
+    const [hFin, mFin] = horario.hora_fin.split(":").map(Number);
+    let totalMinutos = hIni * 60 + mIni;
+    const finMinutos = hFin * 60 + mFin;
+
+    while (totalMinutos < finMinutos) {
+      const h = Math.floor(totalMinutos / 60);
+      const m = totalMinutos % 60;
+      const horaStr = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+      slots.push({ hora: horaStr, disponible: !horasOcupadas.includes(horaStr) });
+      totalMinutos += 60;
+    }
+
+    return res.json({
+      horario,
+      fecha,
+      atiende_ese_dia: true,
+      dia_semana: diaSeleccionado,
+      slots,
+    });
+  } catch (error) {
+    console.error("Error al obtener horario del médico:", error);
+    res.status(500).json({ error: "Error al obtener el horario del médico" });
+  }
+});
+
+// HU-019: Obtener citas activas del paciente (pendientes de atencion)
+router.get("/mis-citas/:paciente_id", async (req, res) => {
+  const { paciente_id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT c.id, c.fecha, c.hora, c.motivo,
+              m.nombre AS medico_nombre, m.apellido AS medico_apellido,
+              m.direccion_clinica
+       FROM citas c
+       JOIN medicos m ON m.id = c.medico_id
+       WHERE c.paciente_id = $1 AND c.estado = 'activa'
+       ORDER BY c.fecha ASC, c.hora ASC`,
+      [paciente_id]
+    );
+
+    res.json({ citas: result.rows });
+  } catch (error) {
+    console.error("Error al obtener citas del paciente:", error);
+    res.status(500).json({ error: "Error al obtener las citas" });
+  }
+});
+
 // Actualizar perfil del paciente
 router.put("/perfil/:id", async (req, res) => {
   const { id } = req.params;

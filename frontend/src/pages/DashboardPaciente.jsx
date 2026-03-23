@@ -1,17 +1,29 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import "../styles/Dashboard.css"; 
+import "../styles/Dashboard.css";
 import { useNavigate } from "react-router-dom";
 
 const DashboardPaciente = () => {
+  const [vista, setVista] = useState("medicos"); // "medicos" | "citas"
   const [medicos, setMedicos] = useState([]);
   const [especialidadFiltro, setEspecialidadFiltro] = useState("");
-  const [medicoSeleccionado, setMedicoSeleccionado] = useState(null); // Para el modal
+  const [medicoSeleccionado, setMedicoSeleccionado] = useState(null);
   const [formData, setFormData] = useState({ fecha: "", hora: "", motivo: "" });
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "" });
-  
+
+  // HU-018: estados para ver horario
+  const [medicoHorario, setMedicoHorario] = useState(null);
+  const [horarioData, setHorarioData] = useState(null);
+  const [fechaFiltro, setFechaFiltro] = useState("");
+  const [cargandoHorario, setCargandoHorario] = useState(false);
+  const [horarioMensaje, setHorarioMensaje] = useState("");
+
+  // HU-019: estados para mis citas
+  const [misCitas, setMisCitas] = useState([]);
+  const [cargandoCitas, setCargandoCitas] = useState(false);
+
   const navigate = useNavigate();
-  const usuario = JSON.parse(localStorage.getItem("usuario")); // Obtenemos el ID del paciente logueado
+  const usuario = JSON.parse(localStorage.getItem("usuario"));
 
   useEffect(() => {
     const fetchMedicos = async () => {
@@ -19,11 +31,30 @@ const DashboardPaciente = () => {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/paciente/medicos`);
         setMedicos(response.data);
       } catch (error) {
-        console.error("Error cargando médicos", error);
+        console.error("Error cargando medicos", error);
       }
     };
     fetchMedicos();
   }, []);
+
+  // HU-019: cargar citas cuando se cambia a la vista de citas
+  useEffect(() => {
+    if (vista !== "citas") return;
+    const fetchCitas = async () => {
+      setCargandoCitas(true);
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_URL}/paciente/mis-citas/${usuario.id}`
+        );
+        setMisCitas(response.data.citas);
+      } catch (error) {
+        console.error("Error cargando citas", error);
+      } finally {
+        setCargandoCitas(false);
+      }
+    };
+    fetchCitas();
+  }, [vista]);
 
   const handleProgramarCita = async (e) => {
     e.preventDefault();
@@ -33,73 +64,342 @@ const DashboardPaciente = () => {
       const payload = {
         medico_id: medicoSeleccionado.id,
         paciente_id: usuario.id,
-        ...formData
+        ...formData,
       };
 
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/paciente/programar-cita`, payload);
-      
-      setMensaje({ texto: "¡Cita programada con éxito!", tipo: "success" });
-      setTimeout(() => setMedicoSeleccionado(null), 2000); // Cerrar modal tras éxito
+      await axios.post(`${import.meta.env.VITE_API_URL}/paciente/programar-cita`, payload);
+      setMensaje({ texto: "Cita programada con exito.", tipo: "success" });
+      setTimeout(() => setMedicoSeleccionado(null), 2000);
     } catch (error) {
-      setMensaje({ 
-        texto: error.response?.data?.error || "Error al programar la cita", 
-        tipo: "error" 
+      setMensaje({
+        texto: error.response?.data?.error || "Error al programar la cita",
+        tipo: "error",
       });
     }
   };
+
+  // HU-018: abrir modal de horario y cargar datos sin fecha
+  const handleVerHorario = async (medico) => {
+    setMedicoHorario(medico);
+    setFechaFiltro("");
+    setHorarioData(null);
+    setHorarioMensaje("");
+    setCargandoHorario(true);
+
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_URL}/paciente/medicos/${medico.id}/horario`
+      );
+      setHorarioData(res.data);
+      if (!res.data.horario) {
+        setHorarioMensaje("Este medico aun no ha configurado su horario de atencion.");
+      }
+    } catch (error) {
+      setHorarioMensaje("Error al cargar el horario del medico.");
+    } finally {
+      setCargandoHorario(false);
+    }
+  };
+
+  // HU-018: consultar slots para la fecha seleccionada
+  const handleFechaFiltro = async (fecha) => {
+    setFechaFiltro(fecha);
+    if (!fecha || !medicoHorario) return;
+
+    setCargandoHorario(true);
+    setHorarioMensaje("");
+
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_URL}/paciente/medicos/${medicoHorario.id}/horario?fecha=${fecha}`
+      );
+      setHorarioData(res.data);
+    } catch (error) {
+      setHorarioMensaje("Error al consultar disponibilidad para esa fecha.");
+    } finally {
+      setCargandoHorario(false);
+    }
+  };
+
+  const cerrarModalHorario = () => {
+    setMedicoHorario(null);
+    setHorarioData(null);
+    setFechaFiltro("");
+    setHorarioMensaje("");
+  };
+
+  const capitalizar = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+
+  const formatearDias = (dias) => {
+    if (!dias || dias.length === 0) return "Sin dias configurados";
+    return dias.map(capitalizar).join(", ");
+  };
+
+  const formatearFecha = (fechaStr) => {
+    const date = new Date(fechaStr);
+    const day = String(date.getUTCDate()).padStart(2, "0");
+    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const year = date.getUTCFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const formatearHora = (horaStr) => horaStr.slice(0, 5);
 
   const medicosFiltrados = medicos.filter((medico) =>
     medico.especialidad.toLowerCase().includes(especialidadFiltro.toLowerCase())
   );
 
+  const tieneHorario = horarioData && horarioData.horario;
+
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
         <h1>Portal del Paciente</h1>
-        <button onClick={() => navigate("/login")}>Cerrar Sesión</button>
+        <button onClick={() => navigate("/login")}>Cerrar Sesion</button>
       </header>
 
-      <section className="search-section">
-        <input 
-          type="text" 
-          placeholder="Filtrar por especialidad..." 
-          onChange={(e) => setEspecialidadFiltro(e.target.value)}
-        />
-      </section>
+      <div className="dashboard-tabs">
+        <button
+          className={`tab-btn ${vista === "medicos" ? "tab-btn-activo" : ""}`}
+          onClick={() => setVista("medicos")}
+        >
+          Medicos
+        </button>
+        <button
+          className={`tab-btn ${vista === "citas" ? "tab-btn-activo" : ""}`}
+          onClick={() => setVista("citas")}
+        >
+          Mis Citas
+        </button>
+      </div>
 
-      <section className="medicos-grid">
-        {medicosFiltrados.map((medico) => (
-          <div key={medico.id} className="medico-card">
-            <h3>{medico.nombre}</h3>
-            <p>{medico.especialidad}</p>
-            {/* Botón que activa el modal */}
-            <button onClick={() => setMedicoSeleccionado(medico)} className="btn-ver-horarios">
-              Programar Cita
-            </button>
+      {/* VISTA: MEDICOS */}
+      {vista === "medicos" && (
+        <>
+          <section className="search-section">
+            <input
+              type="text"
+              placeholder="Filtrar por especialidad..."
+              onChange={(e) => setEspecialidadFiltro(e.target.value)}
+            />
+          </section>
+
+          <section className="medicos-grid">
+            {medicosFiltrados.map((medico) => (
+              <div key={medico.id} className="medico-card">
+                <h3>{medico.nombre}</h3>
+                <p>{medico.especialidad}</p>
+                <div className="card-buttons">
+                  <button
+                    onClick={() => handleVerHorario(medico)}
+                    className="btn-horario"
+                  >
+                    Ver Horario
+                  </button>
+                  <button
+                    onClick={() => setMedicoSeleccionado(medico)}
+                    className="btn-ver-horarios"
+                  >
+                    Programar Cita
+                  </button>
+                </div>
+              </div>
+            ))}
+          </section>
+        </>
+      )}
+
+      {/* VISTA: MIS CITAS (HU-019) */}
+      {vista === "citas" && (
+        <section className="mis-citas-section">
+          <h2 className="mis-citas-titulo">Mis citas pendientes de atencion</h2>
+
+          {cargandoCitas && <p className="citas-cargando">Cargando citas...</p>}
+
+          {!cargandoCitas && misCitas.length === 0 && (
+            <p className="citas-vacio">No tienes citas activas en este momento.</p>
+          )}
+
+          {!cargandoCitas && misCitas.length > 0 && (
+            <div className="citas-lista">
+              {misCitas.map((cita) => (
+                <div key={cita.id} className="cita-card">
+                  <div className="cita-fila">
+                    <span className="cita-etiqueta">Medico:</span>
+                    <span className="cita-valor">
+                      {cita.medico_nombre} {cita.medico_apellido}
+                    </span>
+                  </div>
+                  <div className="cita-fila">
+                    <span className="cita-etiqueta">Fecha:</span>
+                    <span className="cita-valor">{formatearFecha(cita.fecha)}</span>
+                  </div>
+                  <div className="cita-fila">
+                    <span className="cita-etiqueta">Hora:</span>
+                    <span className="cita-valor">{formatearHora(cita.hora)}</span>
+                  </div>
+                  <div className="cita-fila">
+                    <span className="cita-etiqueta">Clinica:</span>
+                    <span className="cita-valor">{cita.direccion_clinica}</span>
+                  </div>
+                  <div className="cita-fila cita-fila-motivo">
+                    <span className="cita-etiqueta">Motivo:</span>
+                    <span className="cita-valor">{cita.motivo}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* MODAL DE HORARIO (HU-018) */}
+      {medicoHorario && (
+        <div className="modal-overlay">
+          <div className="modal-content modal-horario">
+            <h2>Horario de {medicoHorario.nombre}</h2>
+            <p className="medico-especialidad-modal">{medicoHorario.especialidad}</p>
+
+            {cargandoHorario && <p className="horario-cargando">Cargando horario...</p>}
+
+            {horarioMensaje && (
+              <p className="horario-sin-datos">{horarioMensaje}</p>
+            )}
+
+            {tieneHorario && !cargandoHorario && (
+              <div className="horario-info">
+                <div className="horario-general">
+                  <div className="horario-dato">
+                    <span className="horario-etiqueta">Dias de atencion:</span>
+                    <span className="horario-valor">
+                      {formatearDias(horarioData.horario.dias)}
+                    </span>
+                  </div>
+                  <div className="horario-dato">
+                    <span className="horario-etiqueta">Horario:</span>
+                    <span className="horario-valor">
+                      {horarioData.horario.hora_inicio} - {horarioData.horario.hora_fin}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="horario-filtro-fecha">
+                  <label className="horario-etiqueta">
+                    Consultar disponibilidad para una fecha:
+                  </label>
+                  <input
+                    type="date"
+                    value={fechaFiltro}
+                    onChange={(e) => handleFechaFiltro(e.target.value)}
+                    className="input-fecha-filtro"
+                  />
+                </div>
+
+                {fechaFiltro && !cargandoHorario && horarioData.fecha && (
+                  <div className="horario-slots-container">
+                    {!horarioData.atiende_ese_dia ? (
+                      <p className="horario-no-atiende">
+                        El medico no atiende los dias {capitalizar(horarioData.dia_semana)}.
+                      </p>
+                    ) : (
+                      <>
+                        <p className="slots-titulo">
+                          Disponibilidad para el {fechaFiltro} ({capitalizar(horarioData.dia_semana)}):
+                        </p>
+                        <div className="slots-leyenda">
+                          <span className="slot-legend slot-disponible-legend">Disponible</span>
+                          <span className="slot-legend slot-ocupado-legend">Ocupado</span>
+                        </div>
+                        <div className="slots-grid">
+                          {horarioData.slots.length === 0 ? (
+                            <p className="horario-sin-datos">
+                              No hay horarios configurados para este dia.
+                            </p>
+                          ) : (
+                            horarioData.slots.map((slot) => (
+                              <div
+                                key={slot.hora}
+                                className={`slot ${slot.disponible ? "slot-disponible" : "slot-ocupado"}`}
+                              >
+                                {slot.hora}
+                                <span className="slot-estado">
+                                  {slot.disponible ? "Libre" : "Ocupado"}
+                                </span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="modal-buttons">
+              {tieneHorario && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const medico = medicoHorario;
+                    cerrarModalHorario();
+                    setMedicoSeleccionado(medico);
+                  }}
+                  className="btn-confirmar"
+                >
+                  Programar Cita
+                </button>
+              )}
+              <button type="button" onClick={cerrarModalHorario} className="btn-cancelar">
+                Cerrar
+              </button>
+            </div>
           </div>
-        ))}
-      </section>
+        </div>
+      )}
 
-      {/* MODAL DE PROGRAMACIÓN (HU-008) */}
+      {/* MODAL DE PROGRAMACION (HU-008) */}
       {medicoSeleccionado && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h2>Programar Cita con Dr. {medicoSeleccionado.nombre}</h2>
-            {mensaje.texto && <div className={`alert ${mensaje.tipo}`}>{mensaje.texto}</div>}
-            
+            <h2>Programar Cita con {medicoSeleccionado.nombre}</h2>
+            {mensaje.texto && (
+              <div className={`alert ${mensaje.tipo}`}>{mensaje.texto}</div>
+            )}
+
             <form onSubmit={handleProgramarCita}>
               <label>Fecha:</label>
-              <input type="date" required onChange={(e) => setFormData({...formData, fecha: e.target.value})} />
-              
+              <input
+                type="date"
+                required
+                onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
+              />
+
               <label>Hora:</label>
-              <input type="time" required onChange={(e) => setFormData({...formData, hora: e.target.value})} />
-              
+              <input
+                type="time"
+                required
+                onChange={(e) => setFormData({ ...formData, hora: e.target.value })}
+              />
+
               <label>Motivo:</label>
-              <textarea required placeholder="Describa sus síntomas..." onChange={(e) => setFormData({...formData, motivo: e.target.value})} />
-              
+              <textarea
+                required
+                placeholder="Describa sus sintomas..."
+                onChange={(e) => setFormData({ ...formData, motivo: e.target.value })}
+              />
+
               <div className="modal-buttons">
-                <button type="submit" className="btn-confirmar">Confirmar Cita</button>
-                <button type="button" onClick={() => setMedicoSeleccionado(null)} className="btn-cancelar">Cerrar</button>
+                <button type="submit" className="btn-confirmar">
+                  Confirmar Cita
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMedicoSeleccionado(null)}
+                  className="btn-cancelar"
+                >
+                  Cerrar
+                </button>
               </div>
             </form>
           </div>
