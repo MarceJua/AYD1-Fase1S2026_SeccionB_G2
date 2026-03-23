@@ -145,8 +145,6 @@ En esta sección se podrá visualizar 2 tipos de reportes uan de `Gráfica de Ba
 
 ![Reporte_Pie_Chart](./imagenes/)
 
----
-
 ### 4.4 Prototipo Rol - Adminstrador
 El siguiente prototifue fue realizado en la plataforma `Marvelapp.com`. Este prototipo ejemplifica de manera iteractiva lo que puede realizarse con el rol de `Administrador`, es fácil de utilizar y se puede interactuar con el prototipo accediendo al link debajo de la imagen:
 
