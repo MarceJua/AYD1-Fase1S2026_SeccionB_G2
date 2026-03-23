@@ -19,19 +19,19 @@ const LoginMedico = () => {
       localStorage.setItem("usuario", JSON.stringify(response.data.usuario));
       setMensaje({ texto: "Inicio de sesión exitoso", tipo: "success" });
 
-      // Verificar si el médico ya tiene horario configurado
+      // Primera vez: si no hay horario, debe configurarlo antes de entrar al dashboard.
       try {
         const horarioRes = await axios.get(`${import.meta.env.VITE_API_URL}/medico/horarios`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        
-        if (horarioRes.data.horario) {
-          setTimeout(() => navigate("/perfil-medico"), 1000);
+
+        if (horarioRes.data?.horario) {
+          setTimeout(() => navigate("/dashboard-medico"), 1000);
         } else {
           setTimeout(() => navigate("/horario-medico"), 1000);
         }
       } catch {
-        
+        // Si falla la consulta de horario, se envía a configuración para completar onboarding.
         setTimeout(() => navigate("/horario-medico"), 1000);
       }
 

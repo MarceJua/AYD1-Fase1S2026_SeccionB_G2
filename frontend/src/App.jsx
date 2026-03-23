@@ -13,6 +13,7 @@ import DashboardPaciente from "./pages/DashboardPaciente";
 import PerfilPaciente from "./pages/PerfilPaciente";
 import HorarioMedico from "./pages/HorarioMedico"; // HU-009
 import PerfilMedico from "./pages/PerfilMedico"; // HU-013
+import DashboardMedico from "./pages/DashboardMedico";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
 
         <Route path="/dashboard" element={<DashboardPaciente />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/dashboard-medico" element={<DashboardMedico />} />
         <Route path="/perfil" element={<PerfilPaciente />} />
         <Route path="/horario-medico" element={<HorarioMedico />} /> {/* HU-009 */}
         <Route path="/perfil-medico" element={<PerfilMedico />} /> {/* HU-013 */}
