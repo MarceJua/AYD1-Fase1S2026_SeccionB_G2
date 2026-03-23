@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS citas (
   paciente_id INT REFERENCES pacientes(id),
   fecha       DATE NOT NULL,
   hora        TIME NOT NULL,
+  motivo      TEXT,
   estado      VARCHAR(20) DEFAULT 'activa'
 );
 
