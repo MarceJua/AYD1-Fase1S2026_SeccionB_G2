@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import Chart from "chart.js/auto";
 import "../styles/AdminDashboard.css";
+
+Chart.defaults.color = "#ffffff";
+Chart.defaults.borderColor = "rgba(255, 255, 255, 0.1)";
 
 const AdminDashboard = () => {
   const [medicos, setMedicos] = useState([]);
@@ -108,6 +112,7 @@ const AdminDashboard = () => {
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
           legend: {
             display: true,
@@ -147,6 +152,7 @@ const AdminDashboard = () => {
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
       },
     });
   }, [reporteEspecialidades]);
@@ -444,7 +450,6 @@ const AdminDashboard = () => {
           </tbody>
         </table>
       )}
-      // Sección de Reportes Analíticos
       <hr style={{ margin: "40px 0", border: "1px solid #ccc" }} />
       <h2 style={{ color: "#0056b3" }}>📊 Reportes Analíticos del Sistema</h2>
       <div className="reportes-container">

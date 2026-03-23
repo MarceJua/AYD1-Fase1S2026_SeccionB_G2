@@ -514,48 +514,64 @@ const darBajaPaciente = async (req, res) => {
   }
 };
 
-// Funciones para reportes analiticos HU-012
-// 1. Reporte de médicos que más pasientes han atendidos (HU-012)
+/**
+ * REPORTE 1: Top 5 Médicos con más pacientes atendidos
+ */
 const reporteMedicosMasAtendidos = async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT 
-        m.id,
-        m.nombre,
-        m.apellido,
-        COUNT(c.id) AS total_citas
+    const query = `
+      SELECT m.nombre, m.apellido, COUNT(c.id) AS total_citas
       FROM medicos m
-      JOIN citas c ON c.medico_id = m.id
-      WHERE c.estado = 'atendida'
-      GROUP BY m.id
+      JOIN citas c ON m.id = c.medico_id
+      WHERE c.estado = 'Atendido'
+      GROUP BY m.id, m.nombre, m.apellido
       ORDER BY total_citas DESC
-    `);
+      LIMIT 5;
+    `;
+    const result = await pool.query(query);
 
-    res.json(result.rows);
+    // Formateamos los datos para enviarlos limpios al frontend
+    const data = result.rows.map((row) => ({
+      nombre: `Dr. ${row.nombre} ${row.apellido}`,
+      total_citas: parseInt(row.total_citas, 10),
+    }));
+
+    res.json(data);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error generando reporte" });
+    console.error("Error en reporteMedicosMasAtendidos:", error);
+    res
+      .status(500)
+      .json({ error: "Error interno al generar el reporte de médicos." });
   }
 };
 
-// 2. Especialidad con más citas atendidas (HU-012)
+/**
+ * REPORTE 2: Especialidades más solicitadas (historicas)
+ */
 const reporteEspecialidades = async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT 
-        especialidad,
-        COUNT(c.id) AS total_citas
+    const query = `
+      SELECT m.especialidad, COUNT(c.id) AS total
       FROM medicos m
-      JOIN citas c ON c.medico_id = m.id
-      WHERE c.estado = 'atendida'
-      GROUP BY especialidad
-      ORDER BY total_citas DESC
-    `);
+      JOIN citas c ON m.id = c.medico_id
+      GROUP BY m.especialidad
+      ORDER BY total DESC;
+    `;
+    const result = await pool.query(query);
 
-    res.json(result.rows);
+    const data = result.rows.map((row) => ({
+      especialidad: row.especialidad,
+      total: parseInt(row.total, 10),
+    }));
+
+    res.json(data);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error generando reporte" });
+    console.error("Error en reporteEspecialidades:", error);
+    res
+      .status(500)
+      .json({
+        error: "Error interno al generar el reporte de especialidades.",
+      });
   }
 };
 
