@@ -1,28 +1,22 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import "../styles/Dashboard.css"; // Crearemos este CSS después
+import "../styles/Dashboard.css"; 
 import { useNavigate } from "react-router-dom";
 
 const DashboardPaciente = () => {
   const [medicos, setMedicos] = useState([]);
   const [especialidadFiltro, setEspecialidadFiltro] = useState("");
+  const [medicoSeleccionado, setMedicoSeleccionado] = useState(null); // Para el modal
+  const [formData, setFormData] = useState({ fecha: "", hora: "", motivo: "" });
+  const [mensaje, setMensaje] = useState({ texto: "", tipo: "" });
+  
   const navigate = useNavigate();
+  const usuario = JSON.parse(localStorage.getItem("usuario")); // Obtenemos el ID del paciente logueado
 
-  // funcion para redirigir al login
-  const handleLogout = () => {
-    // Borramos los datos de la sesión actual
-    localStorage.removeItem("token");
-    localStorage.removeItem("usuario");
-    // Redirigimos al login
-    navigate("/login");
-  };
-  // Cargar médicos al iniciar la pantalla
   useEffect(() => {
     const fetchMedicos = async () => {
       try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_URL}/paciente/medicos`,
-        );
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/paciente/medicos`);
         setMedicos(response.data);
       } catch (error) {
         console.error("Error cargando médicos", error);
@@ -31,75 +25,86 @@ const DashboardPaciente = () => {
     fetchMedicos();
   }, []);
 
-  // Lógica de filtrado
-  const medicosFiltrados = medicos.filter((medico) =>
-    medico.especialidad
-      .toLowerCase()
-      .includes(especialidadFiltro.toLowerCase()),
-  );
+  const handleProgramarCita = async (e) => {
+    e.preventDefault();
+    setMensaje({ texto: "", tipo: "" });
 
-  // Función auxiliar (importada del Admin) para construir la ruta de la imagen
-  const getImageUrl = (rutaFoto) => {
-    // Si no hay foto, devolvemos un placeholder de 110px para que cuadre con tu diseño
-    if (!rutaFoto) return "https://via.placeholder.com/110";
+    try {
+      const payload = {
+        medico_id: medicoSeleccionado.id,
+        paciente_id: usuario.id,
+        ...formData
+      };
 
-    // Extraemos solo el nombre del archivo (ignorando carpetas y diagonales)
-    const nombreArchivo = rutaFoto.split("\\").pop().split("/").pop();
-
-    return `http://localhost:5000/uploads/${nombreArchivo}`;
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/paciente/programar-cita`, payload);
+      
+      setMensaje({ texto: "¡Cita programada con éxito!", tipo: "success" });
+      setTimeout(() => setMedicoSeleccionado(null), 2000); // Cerrar modal tras éxito
+    } catch (error) {
+      setMensaje({ 
+        texto: error.response?.data?.error || "Error al programar la cita", 
+        tipo: "error" 
+      });
+    }
   };
+
+  const medicosFiltrados = medicos.filter((medico) =>
+    medico.especialidad.toLowerCase().includes(especialidadFiltro.toLowerCase())
+  );
 
   return (
     <div className="dashboard-container">
-      {/* 3. Agregamos el botón en el header */}
       <header className="dashboard-header">
-        <div className="header-top">
-          <h1>Portal del Paciente</h1>
-
-          {/* Agrupamos los botones aquí */}
-          <div className="header-buttons">
-            <button onClick={() => navigate("/perfil")} className="btn-perfil">
-              Mi Perfil
-            </button>
-            <button onClick={handleLogout} className="btn-logout">
-              Cerrar Sesión
-            </button>
-          </div>
-        </div>
-        <p>Encuentra a tu especialista ideal</p>
+        <h1>Portal del Paciente</h1>
+        <button onClick={() => navigate("/login")}>Cerrar Sesión</button>
       </header>
 
       <section className="search-section">
-        <input
-          type="text"
-          placeholder="Buscar por especialidad (ej. Cardiología)..."
-          value={especialidadFiltro}
+        <input 
+          type="text" 
+          placeholder="Filtrar por especialidad..." 
           onChange={(e) => setEspecialidadFiltro(e.target.value)}
-          className="search-input"
         />
       </section>
 
       <section className="medicos-grid">
-        {medicosFiltrados.length > 0 ? (
-          medicosFiltrados.map((medico) => (
-            <div key={medico.id} className="medico-card">
-              <img
-                src={getImageUrl(medico.foto)}
-                alt={medico.nombre}
-                className="medico-foto"
-              />
-              <h3>{medico.nombre}</h3>
-              <p className="especialidad">{medico.especialidad}</p>
-              <p className="direccion">📍 {medico.direccion_clinica}</p>
-              <button className="btn-ver-horarios">Ver Horarios</button>
-            </div>
-          ))
-        ) : (
-          <p className="no-results">
-            No se encontraron médicos con esa especialidad.
-          </p>
-        )}
+        {medicosFiltrados.map((medico) => (
+          <div key={medico.id} className="medico-card">
+            <h3>{medico.nombre}</h3>
+            <p>{medico.especialidad}</p>
+            {/* Botón que activa el modal */}
+            <button onClick={() => setMedicoSeleccionado(medico)} className="btn-ver-horarios">
+              Programar Cita
+            </button>
+          </div>
+        ))}
       </section>
+
+      {/* MODAL DE PROGRAMACIÓN (HU-008) */}
+      {medicoSeleccionado && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Programar Cita con Dr. {medicoSeleccionado.nombre}</h2>
+            {mensaje.texto && <div className={`alert ${mensaje.tipo}`}>{mensaje.texto}</div>}
+            
+            <form onSubmit={handleProgramarCita}>
+              <label>Fecha:</label>
+              <input type="date" required onChange={(e) => setFormData({...formData, fecha: e.target.value})} />
+              
+              <label>Hora:</label>
+              <input type="time" required onChange={(e) => setFormData({...formData, hora: e.target.value})} />
+              
+              <label>Motivo:</label>
+              <textarea required placeholder="Describa sus síntomas..." onChange={(e) => setFormData({...formData, motivo: e.target.value})} />
+              
+              <div className="modal-buttons">
+                <button type="submit" className="btn-confirmar">Confirmar Cita</button>
+                <button type="button" onClick={() => setMedicoSeleccionado(null)} className="btn-cancelar">Cerrar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
