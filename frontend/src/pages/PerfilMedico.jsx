@@ -161,6 +161,12 @@ export default function PerfilMedico() {
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <button
+            onClick={() => navigate("/dashboard-medico")}
+            style={styles.btnHome}
+          >
+            Ir al Inicio
+          </button>
+          <button
             onClick={() => navigate("/horario-medico")}
             style={styles.btnVolver}
           >
@@ -363,6 +369,16 @@ const styles = {
     color: "#94a3b8",
     fontSize: 14,
     margin: "4px 0 0",
+  },
+  btnHome: {
+    background: "rgba(148, 163, 184, 0.1)",
+    border: "1px solid rgba(148,163,184,0.25)",
+    color: "#cbd5e1",
+    borderRadius: 10,
+    padding: "8px 18px",
+    fontSize: 14,
+    cursor: "pointer",
+    fontWeight: 500,
   },
   btnVolver: {
     background: "rgba(148, 163, 184, 0.1)",
