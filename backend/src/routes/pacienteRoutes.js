@@ -9,10 +9,33 @@ router.post("/programar-cita", programarCita);
 
 // Obtener todos los médicos aprobados
 router.get("/medicos", async (req, res) => {
+  const { paciente_id } = req.query;
+
   try {
+    const pacienteIdNum = Number(paciente_id);
+    const filtroPacienteValido =
+      paciente_id !== undefined &&
+      Number.isInteger(pacienteIdNum) &&
+      pacienteIdNum > 0;
+
     const result = await pool.query(
-      "SELECT id, nombre, especialidad, direccion_clinica, foto FROM medicos WHERE estado = 'aprobado'",
+      `SELECT m.id, m.nombre, m.apellido, m.especialidad, m.direccion_clinica, m.foto
+       FROM medicos m
+       WHERE m.estado = 'aprobado'
+         AND (
+           $1::int IS NULL
+           OR NOT EXISTS (
+             SELECT 1
+             FROM citas c
+             WHERE c.medico_id = m.id
+               AND c.paciente_id = $1
+               AND c.estado = 'activa'
+           )
+         )
+       ORDER BY m.nombre ASC, m.apellido ASC`,
+      [filtroPacienteValido ? pacienteIdNum : null],
     );
+
     res.json(result.rows);
   } catch (error) {
     console.error(error);
@@ -225,11 +248,17 @@ router.get("/historial-citas/:paciente_id", async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT c.id, c.fecha, c.hora, c.motivo, c.estado, c.tratamiento,
+              CASE
+                WHEN LOWER(c.estado) = 'atendido' OR LOWER(c.estado) = 'atendida' THEN 'Atendido'
+                WHEN LOWER(c.estado) IN ('cancelada por médico', 'cancelada por medico') THEN 'Cancelada por médico'
+                WHEN LOWER(c.estado) = 'cancelada por paciente' OR LOWER(c.estado) = 'cancelada' THEN 'Cancelada por paciente'
+                ELSE c.estado
+              END AS estado_mostrable,
               m.nombre AS medico_nombre, m.apellido AS medico_apellido,
-              m.especialidad
+              m.especialidad, m.direccion_clinica
        FROM citas c
        JOIN medicos m ON m.id = c.medico_id
-       WHERE c.paciente_id = $1 AND c.estado IN ('cancelada', 'atendida')
+       WHERE c.paciente_id = $1 AND LOWER(c.estado) <> 'activa'
        ORDER BY c.fecha DESC, c.hora DESC`,
       [paciente_id],
     );

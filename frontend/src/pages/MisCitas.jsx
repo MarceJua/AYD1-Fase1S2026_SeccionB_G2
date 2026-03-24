@@ -8,20 +8,10 @@ const MisCitas = () => {
   const [citasActivas, setCitasActivas] = useState([]);
   const [historial, setHistorial] = useState([]);
   const [vistaActual, setVistaActual] = useState("activas");
-  const [usuarioId, setUsuarioId] = useState(null);
   const [errorMensaje, setErrorMensaje] = useState("");
+  const usuarioId = JSON.parse(localStorage.getItem("usuario"))?.id ?? null;
 
-  useEffect(() => {
-    const usuarioLogueado = JSON.parse(localStorage.getItem("usuario"));
-    if (usuarioLogueado) {
-      setUsuarioId(usuarioLogueado.id);
-      cargarDatos(usuarioLogueado.id);
-    } else {
-      navigate("/login");
-    }
-  }, [navigate]);
-
-  const cargarDatos = async (id) => {
+  async function cargarDatos(id) {
     try {
       // 1. Cargamos las citas activas (Endpoint de tu compañero)
       const resActivas = await axios.get(
@@ -37,7 +27,30 @@ const MisCitas = () => {
     } catch (error) {
       console.error("Error al cargar citas", error);
     }
-  };
+  }
+
+  useEffect(() => {
+    const usuarioLogueado = JSON.parse(localStorage.getItem("usuario"));
+    if (!usuarioLogueado) {
+      navigate("/login");
+      return;
+    }
+
+    const id = usuarioLogueado.id;
+
+    axios
+      .all([
+        axios.get(`${import.meta.env.VITE_API_URL}/paciente/mis-citas/${id}`),
+        axios.get(`${import.meta.env.VITE_API_URL}/paciente/historial-citas/${id}`),
+      ])
+      .then(([resActivas, resHistorial]) => {
+        setCitasActivas(resActivas.data.citas);
+        setHistorial(resHistorial.data.historial);
+      })
+      .catch((error) => {
+        console.error("Error al cargar citas", error);
+      });
+  }, [navigate]);
 
   const handleCancelarCita = async (citaId) => {
     setErrorMensaje("");
@@ -204,7 +217,7 @@ const MisCitas = () => {
                 key={cita.id}
                 className="medico-card"
                 style={{
-                  borderLeft: `5px solid ${cita.estado === "atendida" ? "#28a745" : "#dc3545"}`,
+                  borderLeft: `5px solid ${(cita.estado_mostrable || cita.estado) === "Atendido" ? "#28a745" : "#dc3545"}`,
                 }}
               >
                 <div
@@ -235,11 +248,17 @@ const MisCitas = () => {
                   <strong>Especialidad:</strong> {cita.especialidad}
                 </p>
                 <p>
+                  <strong>Clínica:</strong> {cita.direccion_clinica}
+                </p>
+                <p>
                   <strong>Fecha Atendida:</strong> {formatearFecha(cita.fecha)}{" "}
                   a las {cita.hora.slice(0, 5)}
                 </p>
+                <p>
+                  <strong>Estado:</strong> {cita.estado_mostrable || cita.estado}
+                </p>
 
-                {cita.estado === "atendida" && (
+                {(cita.estado_mostrable || cita.estado) === "Atendido" && (
                   <div
                     style={{
                       marginTop: "10px",
@@ -254,7 +273,7 @@ const MisCitas = () => {
                     {cita.tratamiento || "Sin indicaciones adicionales."}
                   </div>
                 )}
-                {cita.estado === "cancelada" && (
+                {(cita.estado_mostrable || cita.estado).startsWith("Cancelada") && (
                   <div
                     style={{
                       marginTop: "10px",
