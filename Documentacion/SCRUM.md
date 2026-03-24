@@ -110,7 +110,7 @@ _Instrucción: Como las Historias de Usuario completas (con criterios de aceptac
 ### **Retrospectiva Sprint 1**
 
 - **Fecha:** 13 de Marzo de 2026
-- **Grabación:** [Pegar Link del Video Aquí]
+- **Grabación:** [https://drive.google.com/file/d/1noKI_ytvwMadHz-ohu5AL-lSVRo8C_PD/view?usp=sharing]
 - **Resumen:**
   1. **¿Qué se hizo BIEN durante el Sprint?** La configuración de la infraestructura en Docker fue un éxito rotundo, permitiendo que todos programaran de forma local sin problemas de dependencias. La comunicación para integrar el Frontend y el Backend en los logins fue muy fluida.
   2. **¿Qué se hizo MAL durante el Sprint?** Tuvimos una leve curva de aprendizaje con las reglas estrictas de GitFlow, lo que provocó pequeñas confusiones al momento de nombrar las ramas y hacer los Conventional Commits.
@@ -119,7 +119,7 @@ _Instrucción: Como las Historias de Usuario completas (con criterios de aceptac
 ### **Retrospectiva Sprint 2**
 
 - **Fecha:** 22 de Marzo de 2026
-- **Grabación:** [Pegar Link del Video Aquí]
+- **Grabación:** [https://drive.google.com/file/d/1HeVPfwh2a47QvBqi0e7tYFQNlqGvKOBZ/view?usp=sharing]
 - **Resumen:**
   1. **¿Qué se hizo BIEN durante el Sprint?** Se logró terminar la lógica compleja de evitar traslapes en las citas y el flujo de los reportes dentro del tiempo límite. El equipo logró acoplarse perfectamente al ritmo acelerado de 9 días por Sprint.
   2. **¿Qué se hizo MAL durante el Sprint?** Al juntar todas las partes visuales al final, tuvimos que invertir tiempo extra estandarizando estilos CSS que no se planificaron desde el inicio.
@@ -132,7 +132,7 @@ _Instrucción: Como las Historias de Usuario completas (con criterios de aceptac
 **[Responsable: Robert y Carlos]**
 _Instrucción: Colocar el link público del tablero y las 3 capturas obligatorias exigidas en la rúbrica._
 
-- **Link del Tablero Oficial:** [Pegar enlace de Trello aquí]
+- **Link del Tablero Oficial:** [https://trello.com/b/9fC86mox/saludplus-kanban-grupo-2]
 
 **Evidencias del Progreso (Capturas):**
 
