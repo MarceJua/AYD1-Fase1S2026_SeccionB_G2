@@ -28,7 +28,7 @@ router.get("/medicos/:id/horario", async (req, res) => {
   try {
     const horarioRes = await pool.query(
       "SELECT dias, hora_inicio, hora_fin FROM horario_medico WHERE medico_id = $1",
-      [id]
+      [id],
     );
 
     if (horarioRes.rows.length === 0) {
@@ -45,7 +45,15 @@ router.get("/medicos/:id/horario", async (req, res) => {
       return res.json({ horario });
     }
 
-    const diasSemana = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+    const diasSemana = [
+      "domingo",
+      "lunes",
+      "martes",
+      "miercoles",
+      "jueves",
+      "viernes",
+      "sabado",
+    ];
     const diaSeleccionado = diasSemana[new Date(fecha + "T12:00:00").getDay()];
 
     if (!horario.dias.includes(diaSeleccionado)) {
@@ -60,7 +68,7 @@ router.get("/medicos/:id/horario", async (req, res) => {
 
     const citasRes = await pool.query(
       "SELECT hora FROM citas WHERE medico_id = $1 AND fecha = $2 AND estado = 'activa'",
-      [id, fecha]
+      [id, fecha],
     );
 
     const horasOcupadas = citasRes.rows.map((c) => c.hora.slice(0, 5));
@@ -75,7 +83,10 @@ router.get("/medicos/:id/horario", async (req, res) => {
       const h = Math.floor(totalMinutos / 60);
       const m = totalMinutos % 60;
       const horaStr = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-      slots.push({ hora: horaStr, disponible: !horasOcupadas.includes(horaStr) });
+      slots.push({
+        hora: horaStr,
+        disponible: !horasOcupadas.includes(horaStr),
+      });
       totalMinutos += 60;
     }
 
@@ -105,7 +116,7 @@ router.get("/mis-citas/:paciente_id", async (req, res) => {
        JOIN medicos m ON m.id = c.medico_id
        WHERE c.paciente_id = $1 AND c.estado = 'activa'
        ORDER BY c.fecha ASC, c.hora ASC`,
-      [paciente_id]
+      [paciente_id],
     );
 
     res.json({ citas: result.rows });
@@ -153,6 +164,80 @@ router.put("/perfil/:id", async (req, res) => {
   } catch (error) {
     console.error("💥 Error actualizando perfil:", error);
     res.status(500).json({ error: "Error interno al actualizar el perfil" });
+  }
+});
+
+// HU-019: Cancelar cita del paciente (Valida regla de 24 horas)
+router.put("/cita/:cita_id/cancelar", async (req, res) => {
+  const { cita_id } = req.params;
+
+  try {
+    // 1. Obtener los datos de la cita para validar la fecha/hora
+    const citaQuery = await pool.query(
+      "SELECT fecha, hora, estado FROM citas WHERE id = $1",
+      [cita_id],
+    );
+
+    if (citaQuery.rows.length === 0) {
+      return res.status(404).json({ error: "Cita no encontrada." });
+    }
+
+    const cita = citaQuery.rows[0];
+
+    if (cita.estado !== "activa") {
+      return res
+        .status(400)
+        .json({ error: "Solo se pueden cancelar citas activas." });
+    }
+
+    // 2. Regla de Negocio: Validar que falten al menos 24 horas
+    // Formateamos la fecha de la base de datos y la hora
+    const fechaCitaStr = cita.fecha.toISOString().split("T")[0];
+    const citaDateTime = new Date(`${fechaCitaStr}T${cita.hora}`);
+    const ahora = new Date();
+
+    // Calculamos la diferencia en milisegundos y la convertimos a horas
+    const diffHoras = (citaDateTime - ahora) / (1000 * 60 * 60);
+
+    if (diffHoras < 24) {
+      return res.status(400).json({
+        error:
+          "No se puede cancelar la cita. Debe hacerse con al menos 24 horas de anticipación.",
+      });
+    }
+
+    // 3. Cancelar la cita si pasa la validación
+    await pool.query("UPDATE citas SET estado = 'cancelada' WHERE id = $1", [
+      cita_id,
+    ]);
+
+    res.json({ mensaje: "Cita cancelada exitosamente." });
+  } catch (error) {
+    console.error("Error al cancelar la cita:", error);
+    res.status(500).json({ error: "Error al procesar la cancelación." });
+  }
+});
+
+// HU-019: Obtener historial de citas (Canceladas y Atendidas)
+router.get("/historial-citas/:paciente_id", async (req, res) => {
+  const { paciente_id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT c.id, c.fecha, c.hora, c.motivo, c.estado, c.tratamiento,
+              m.nombre AS medico_nombre, m.apellido AS medico_apellido,
+              m.especialidad
+       FROM citas c
+       JOIN medicos m ON m.id = c.medico_id
+       WHERE c.paciente_id = $1 AND c.estado IN ('cancelada', 'atendida')
+       ORDER BY c.fecha DESC, c.hora DESC`,
+      [paciente_id],
+    );
+
+    res.json({ historial: result.rows });
+  } catch (error) {
+    console.error("Error al obtener el historial:", error);
+    res.status(500).json({ error: "Error al cargar el historial médico." });
   }
 });
 
