@@ -1,4 +1,4 @@
-# 📚 Historias de Usuario - SaludPlus
+# Historias de Usuario - SaludPlus
 
 Este documento detalla los requerimientos ágiles del sistema, estimaciones y criterios de aceptación, base para nuestro tablero Kanban.
 
