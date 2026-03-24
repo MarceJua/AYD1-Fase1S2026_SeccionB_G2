@@ -28,19 +28,19 @@ Una vez los pacientes inicien sesión, se visualizará en la página principal l
 
 *   **Programar cita:** Cuado el paciente seleccione a un médico tendrá la opcion de programar una cita, llenando los datos que se solicitan en el formulario, datos como fecha de la cita, hora de la cita y el motivo de la cita. La cita se programará siempre y cuando el médico tenga espación en su horario, de lo contrario la cita no se programa.
   
-![Programar Cita para Pacientes](./imagenes/)
+![Programar Cita para Pacientes](./imagenes/Programar%20Cita.png)
 
 * **Citas Activas:** El paciente tiene la opción de poder visualizar las citas a las que se ha registrado dentro de la plataforma y en las cuales aún no ha sido atendido.
 
-![Visualizar Citas para Pacientes](./imagenes/)
+![Visualizar Citas para Pacientes](./imagenes/Citas_Activas.jpeg)
 
 * **Historial de Citas:** El paciente podrá visualizar las citas a las ya ha sido atendido o las citas que se le han cancelado ya se por el mismo paciente o médico.
 
-![Historial Citas para Pacientes](./imagenes/)
+![Historial Citas para Pacientes](./imagenes/Historial.jpeg)
 
 *   **Cancelar cita:** El paciente podrá cancelar su cita presionando el boton "Cancelar" la plataforma le preguntara si esta serguro de realizar esta acción, al realizar esta acción el paciente podrá ver la cita cancelada en el historial de citas.
 
-![Cancelar Cita para Pacientes](./imagenes/)
+![Cancelar Cita para Pacientes](./imagenes/Cancelar_Cita_Paciente.jpeg)
 
 ### 2.3 Perfil del Paciente
 En esta parte el paciente podrá editar su perfil precionando el botón "Perfil o Editar Perfil", al poder visualizar los datos de su perfil el paciente podrá modificar los datos que haya colocado en su registro, exceptuando el correo electronico.
