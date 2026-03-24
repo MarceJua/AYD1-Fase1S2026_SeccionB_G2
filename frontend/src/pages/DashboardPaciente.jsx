@@ -1,105 +1,556 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import "../styles/Dashboard.css"; // Crearemos este CSS después
+import "../styles/Dashboard.css";
 import { useNavigate } from "react-router-dom";
 
 const DashboardPaciente = () => {
+  const [vista, setVista] = useState("medicos");
   const [medicos, setMedicos] = useState([]);
   const [especialidadFiltro, setEspecialidadFiltro] = useState("");
-  const navigate = useNavigate();
+  const [medicoSeleccionado, setMedicoSeleccionado] = useState(null);
+  const [formData, setFormData] = useState({ fecha: "", hora: "", motivo: "" });
+  const [mensaje, setMensaje] = useState({ texto: "", tipo: "" });
 
-  // funcion para redirigir al login
-  const handleLogout = () => {
-    // Borramos los datos de la sesión actual
-    localStorage.removeItem("token");
-    localStorage.removeItem("usuario");
-    // Redirigimos al login
-    navigate("/login");
+  const [medicoHorario, setMedicoHorario] = useState(null);
+  const [horarioData, setHorarioData] = useState(null);
+  const [cargandoHorario, setCargandoHorario] = useState(false);
+  const [horarioMensaje, setHorarioMensaje] = useState("");
+
+  const [misCitas, setMisCitas] = useState([]);
+  const [historialCitas, setHistorialCitas] = useState([]);
+  const [cargandoCitas, setCargandoCitas] = useState(false);
+
+  const navigate = useNavigate();
+  const usuario = JSON.parse(localStorage.getItem("usuario"));
+  const apiUrl = import.meta.env.VITE_API_URL;
+  const apiBase = apiUrl.replace(/\/api\/?$/, "");
+
+  const capitalizar = (str = "") => str.charAt(0).toUpperCase() + str.slice(1);
+
+  const formatearDias = (dias) => {
+    if (!dias || dias.length === 0) return "Sin días configurados";
+    return dias.map(capitalizar).join(", ");
   };
-  // Cargar médicos al iniciar la pantalla
+
+  const formatearFecha = (fechaStr) => {
+    const date = new Date(fechaStr);
+    date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const formatearHora = (horaStr) => (horaStr ? horaStr.slice(0, 5) : "");
+
+  const construirFotoMedico = (foto) => {
+    if (!foto) return null;
+    if (foto.startsWith("http://") || foto.startsWith("https://")) return foto;
+    const nombreArchivo = foto.split(/[/\\]/).pop();
+    return `${apiBase}/uploads/${nombreArchivo}`;
+  };
+
   useEffect(() => {
+    if (!usuario?.id) {
+      navigate("/login");
+      return;
+    }
+
     const fetchMedicos = async () => {
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_API_URL}/paciente/medicos`,
+          `${apiUrl}/paciente/medicos`,
+          { params: { paciente_id: usuario.id } },
         );
         setMedicos(response.data);
       } catch (error) {
         console.error("Error cargando médicos", error);
       }
     };
-    fetchMedicos();
-  }, []);
 
-  // Lógica de filtrado
+    fetchMedicos();
+  }, [apiUrl, navigate, usuario?.id]);
+
+  useEffect(() => {
+    if (!usuario?.id || (vista !== "citas" && vista !== "historial")) return;
+
+    const fetchCitasOHistorial = async () => {
+      setCargandoCitas(true);
+      try {
+        if (vista === "citas") {
+          const resActivas = await axios.get(
+            `${apiUrl}/paciente/mis-citas/${usuario.id}`,
+          );
+          setMisCitas(resActivas.data.citas);
+          return;
+        }
+
+        if (vista === "historial") {
+          const resHistorial = await axios.get(
+            `${apiUrl}/paciente/historial-citas/${usuario.id}`,
+          );
+          setHistorialCitas(resHistorial.data.historial);
+        }
+      } catch (error) {
+        console.error("Error cargando información de citas", error);
+      } finally {
+        setCargandoCitas(false);
+      }
+    };
+
+    fetchCitasOHistorial();
+  }, [apiUrl, usuario?.id, vista]);
+
+  const recargarMedicos = async () => {
+    if (!usuario?.id) return;
+    const response = await axios.get(`${apiUrl}/paciente/medicos`, {
+      params: { paciente_id: usuario.id },
+    });
+    setMedicos(response.data);
+  };
+
+  const handleProgramarCita = async (e) => {
+    e.preventDefault();
+    setMensaje({ texto: "", tipo: "" });
+
+    try {
+      const payload = {
+        medico_id: medicoSeleccionado.id,
+        paciente_id: usuario.id,
+        ...formData,
+      };
+
+      await axios.post(`${apiUrl}/paciente/programar-cita`, payload);
+
+      await recargarMedicos();
+      setMensaje({ texto: "Cita programada con éxito.", tipo: "success" });
+      setFormData({ fecha: "", hora: "", motivo: "" });
+
+      setTimeout(() => {
+        setMedicoSeleccionado(null);
+        setMensaje({ texto: "", tipo: "" });
+      }, 1500);
+    } catch (error) {
+      setMensaje({
+        texto: error.response?.data?.error || "Error al programar la cita",
+        tipo: "error",
+      });
+    }
+  };
+
+  const handleCancelarCita = async (citaId) => {
+    if (
+      !window.confirm(
+        "¿Estás seguro de cancelar esta cita? Recuerda que debes hacerlo con al menos 24 horas de anticipación.",
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await axios.put(`${apiUrl}/paciente/cita/${citaId}/cancelar`);
+      alert("✅ Cita cancelada exitosamente.");
+
+      const response = await axios.get(
+        `${apiUrl}/paciente/mis-citas/${usuario.id}`,
+      );
+      setMisCitas(response.data.citas);
+      await recargarMedicos();
+    } catch (error) {
+      alert(`⚠️ ${error.response?.data?.error || "Error al cancelar la cita"}`);
+    }
+  };
+
+  const handleVerHorario = async (medico) => {
+    setMedicoHorario(medico);
+    setHorarioData(null);
+    setHorarioMensaje("");
+    setCargandoHorario(true);
+
+    try {
+      const res = await axios.get(`${apiUrl}/paciente/medicos/${medico.id}/horario`);
+      setHorarioData(res.data);
+      if (!res.data.horario) {
+        setHorarioMensaje("Este médico aún no ha configurado su horario de atención.");
+      }
+    } catch {
+      setHorarioMensaje("Error al cargar el horario del médico.");
+    } finally {
+      setCargandoHorario(false);
+    }
+  };
+
+  const cerrarModalHorario = () => {
+    setMedicoHorario(null);
+    setHorarioData(null);
+    setHorarioMensaje("");
+  };
+
   const medicosFiltrados = medicos.filter((medico) =>
     medico.especialidad
       .toLowerCase()
       .includes(especialidadFiltro.toLowerCase()),
   );
 
-  // Función auxiliar (importada del Admin) para construir la ruta de la imagen
-  const getImageUrl = (rutaFoto) => {
-    // Si no hay foto, devolvemos un placeholder de 110px para que cuadre con tu diseño
-    if (!rutaFoto) return "https://via.placeholder.com/110";
-
-    // Extraemos solo el nombre del archivo (ignorando carpetas y diagonales)
-    const nombreArchivo = rutaFoto.split("\\").pop().split("/").pop();
-
-    return `http://localhost:5000/uploads/${nombreArchivo}`;
-  };
+  const tieneHorario = horarioData && horarioData.horario;
 
   return (
     <div className="dashboard-container">
-      {/* 3. Agregamos el botón en el header */}
       <header className="dashboard-header">
         <div className="header-top">
           <h1>Portal del Paciente</h1>
-
-          {/* Agrupamos los botones aquí */}
           <div className="header-buttons">
-            <button onClick={() => navigate("/perfil")} className="btn-perfil">
-              Mi Perfil
+            <button className="btn-perfil" onClick={() => navigate("/perfil")}>
+              Modificar Datos
             </button>
-            <button onClick={handleLogout} className="btn-logout">
-              Cerrar Sesión
+            <button className="btn-logout" onClick={() => navigate("/login")}>
+              Cerrar Sesion
             </button>
           </div>
         </div>
-        <p>Encuentra a tu especialista ideal</p>
       </header>
 
-      <section className="search-section">
-        <input
-          type="text"
-          placeholder="Buscar por especialidad (ej. Cardiología)..."
-          value={especialidadFiltro}
-          onChange={(e) => setEspecialidadFiltro(e.target.value)}
-          className="search-input"
-        />
-      </section>
+      <div className="dashboard-tabs">
+        <button
+          className={`tab-btn ${vista === "medicos" ? "tab-btn-activo" : ""}`}
+          onClick={() => setVista("medicos")}
+        >
+          Medicos
+        </button>
+        <button
+          className={`tab-btn ${vista === "citas" ? "tab-btn-activo" : ""}`}
+          onClick={() => setVista("citas")}
+        >
+          Mis Citas
+        </button>
+        <button
+          className={`tab-btn ${vista === "historial" ? "tab-btn-activo" : ""}`}
+          onClick={() => setVista("historial")}
+        >
+          Historial Médico
+        </button>
+      </div>
 
-      <section className="medicos-grid">
-        {medicosFiltrados.length > 0 ? (
-          medicosFiltrados.map((medico) => (
-            <div key={medico.id} className="medico-card">
-              <img
-                src={getImageUrl(medico.foto)}
-                alt={medico.nombre}
-                className="medico-foto"
-              />
-              <h3>{medico.nombre}</h3>
-              <p className="especialidad">{medico.especialidad}</p>
-              <p className="direccion">📍 {medico.direccion_clinica}</p>
-              <button className="btn-ver-horarios">Ver Horarios</button>
+      {vista === "medicos" && (
+        <>
+          <section className="search-section">
+            <input
+              className="search-input"
+              type="text"
+              placeholder="Filtrar por especialidad..."
+              onChange={(e) => setEspecialidadFiltro(e.target.value)}
+            />
+          </section>
+
+          <section className="medicos-grid">
+            {medicosFiltrados.length === 0 && (
+              <p className="no-results">
+                No hay médicos disponibles para una nueva cita en este momento.
+              </p>
+            )}
+
+            {medicosFiltrados.map((medico) => (
+              <div key={medico.id} className="medico-card">
+                {construirFotoMedico(medico.foto) ? (
+                  <img
+                    src={construirFotoMedico(medico.foto)}
+                    alt={`Foto de ${medico.nombre} ${medico.apellido || ""}`}
+                    className="medico-foto"
+                  />
+                ) : (
+                  <div className="medico-foto" aria-label="Foto no disponible" />
+                )}
+
+                <h3>
+                  Dr. {medico.nombre} {medico.apellido}
+                </h3>
+                <p className="especialidad">{medico.especialidad}</p>
+                <p className="direccion">{medico.direccion_clinica}</p>
+
+                <div className="card-buttons">
+                  <button
+                    onClick={() => handleVerHorario(medico)}
+                    className="btn-horario"
+                  >
+                    Ver Horario
+                  </button>
+                  <button
+                    onClick={() => setMedicoSeleccionado(medico)}
+                    className="btn-ver-horarios"
+                  >
+                    Programar Cita
+                  </button>
+                </div>
+              </div>
+            ))}
+          </section>
+        </>
+      )}
+
+      {vista === "citas" && (
+        <section className="mis-citas-section">
+          <h2 className="mis-citas-titulo">Mis citas pendientes de atención</h2>
+
+          {cargandoCitas && <p className="citas-cargando">Cargando citas...</p>}
+          {!cargandoCitas && misCitas.length === 0 && (
+            <p className="citas-vacio">
+              No tienes citas activas en este momento.
+            </p>
+          )}
+
+          {!cargandoCitas && misCitas.length > 0 && (
+            <div className="citas-lista">
+              {misCitas.map((cita) => (
+                <div key={cita.id} className="cita-card">
+                  <div className="cita-fila">
+                    <span className="cita-etiqueta">Medico:</span>
+                    <span className="cita-valor">
+                      {cita.medico_nombre} {cita.medico_apellido}
+                    </span>
+                  </div>
+                  <div className="cita-fila">
+                    <span className="cita-etiqueta">Fecha:</span>
+                    <span className="cita-valor">
+                      {formatearFecha(cita.fecha)}
+                    </span>
+                  </div>
+                  <div className="cita-fila">
+                    <span className="cita-etiqueta">Hora:</span>
+                    <span className="cita-valor">
+                      {formatearHora(cita.hora)}
+                    </span>
+                  </div>
+                  <div className="cita-fila">
+                    <span className="cita-etiqueta">Clinica:</span>
+                    <span className="cita-valor">{cita.direccion_clinica}</span>
+                  </div>
+                  <div className="cita-fila cita-fila-motivo">
+                    <span className="cita-etiqueta">Motivo:</span>
+                    <span className="cita-valor">{cita.motivo}</span>
+                  </div>
+
+                  {/* BOTÓN DE CANCELAR CITA */}
+                  <button
+                    onClick={() => handleCancelarCita(cita.id)}
+                    style={{
+                      marginTop: "15px",
+                      width: "100%",
+                      padding: "10px",
+                      backgroundColor: "#dc3545",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "5px",
+                      cursor: "pointer",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    ❌ Cancelar Cita
+                  </button>
+                </div>
+              ))}
             </div>
-          ))
-        ) : (
-          <p className="no-results">
-            No se encontraron médicos con esa especialidad.
-          </p>
-        )}
-      </section>
+          )}
+        </section>
+      )}
+
+      {vista === "historial" && (
+        <section className="mis-citas-section">
+          <h2 className="mis-citas-titulo">Mi Historial de Citas</h2>
+
+          {cargandoCitas && (
+            <p className="citas-cargando">Cargando historial...</p>
+          )}
+          {!cargandoCitas && historialCitas.length === 0 && (
+            <p className="citas-vacio">
+              No tienes citas registradas en tu historial.
+            </p>
+          )}
+
+          {!cargandoCitas && historialCitas.length > 0 && (
+            <div className="citas-lista">
+              {historialCitas.map((cita) => (
+                <div
+                  key={cita.id}
+                  className="cita-card"
+                  style={{
+                    borderLeft: `5px solid ${cita.estado_mostrable === "Atendido" ? "#28a745" : "#dc3545"}`,
+                  }}
+                >
+                  <div className="cita-fila">
+                    <span className="cita-etiqueta">Medico:</span>
+                    <span className="cita-valor">
+                      {cita.medico_nombre} {cita.medico_apellido}
+                    </span>
+                  </div>
+                  <div className="cita-fila">
+                    <span className="cita-etiqueta">Fecha:</span>
+                    <span className="cita-valor">
+                      {formatearFecha(cita.fecha)} a las{" "}
+                      {formatearHora(cita.hora)}
+                    </span>
+                  </div>
+                  <div className="cita-fila">
+                    <span className="cita-etiqueta">Clínica:</span>
+                    <span className="cita-valor">{cita.direccion_clinica}</span>
+                  </div>
+                  <div className="cita-fila">
+                    <span className="cita-etiqueta">Estado:</span>
+                    <span
+                      className="cita-valor"
+                      style={{
+                        color:
+                          cita.estado_mostrable === "Atendido" ? "#28a745" : "#dc3545",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {cita.estado_mostrable || cita.estado}
+                    </span>
+                  </div>
+                  <div className="cita-fila cita-fila-motivo">
+                    <span className="cita-etiqueta">Motivo Inicial:</span>
+                    <span className="cita-valor">{cita.motivo}</span>
+                  </div>
+
+                  {cita.estado_mostrable === "Atendido" && (
+                    <div
+                      className="cita-fila cita-fila-motivo"
+                      style={{
+                        marginTop: "10px",
+                        padding: "10px",
+                        backgroundColor: "#f8f9fa",
+                        borderRadius: "5px",
+                      }}
+                    >
+                      <span className="cita-etiqueta">Tratamiento:</span>
+                      <span className="cita-valor">
+                        {cita.tratamiento || "Sin tratamiento registrado."}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {medicoHorario && (
+        <div className="modal-overlay">
+          <div className="modal-content modal-horario">
+            <h2>
+              Horario de Dr. {medicoHorario.nombre} {medicoHorario.apellido}
+            </h2>
+            <p className="medico-especialidad-modal">
+              {medicoHorario.especialidad}
+            </p>
+
+            {cargandoHorario && (
+              <p className="horario-cargando">Cargando horario...</p>
+            )}
+
+            {horarioMensaje && (
+              <p className="horario-sin-datos">{horarioMensaje}</p>
+            )}
+
+            {tieneHorario && !cargandoHorario && (
+              <div className="horario-info">
+                <div className="horario-general">
+                  <div className="horario-dato">
+                    <span className="horario-etiqueta">Días de atención:</span>
+                    <span className="horario-valor">
+                      {formatearDias(horarioData.horario.dias)}
+                    </span>
+                  </div>
+                  <div className="horario-dato">
+                    <span className="horario-etiqueta">Horario:</span>
+                    <span className="horario-valor">
+                      {horarioData.horario.hora_inicio} -{" "}
+                      {horarioData.horario.hora_fin}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="modal-buttons">
+              {tieneHorario && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const medico = medicoHorario;
+                    cerrarModalHorario();
+                    setMedicoSeleccionado(medico);
+                  }}
+                  className="btn-confirmar"
+                >
+                  Programar Cita
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={cerrarModalHorario}
+                className="btn-cancelar"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE PROGRAMACION (HU-008) */}
+      {medicoSeleccionado && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Programar Cita con {medicoSeleccionado.nombre}</h2>
+            {mensaje.texto && (
+              <div className={`alert ${mensaje.tipo}`}>{mensaje.texto}</div>
+            )}
+
+            <form onSubmit={handleProgramarCita}>
+              <label>Fecha:</label>
+              <input
+                type="date"
+                required
+                onChange={(e) =>
+                  setFormData({ ...formData, fecha: e.target.value })
+                }
+              />
+
+              <label>Hora:</label>
+              <input
+                type="time"
+                required
+                onChange={(e) =>
+                  setFormData({ ...formData, hora: e.target.value })
+                }
+              />
+
+              <label>Motivo:</label>
+              <textarea
+                required
+                placeholder="Describa sus sintomas..."
+                onChange={(e) =>
+                  setFormData({ ...formData, motivo: e.target.value })
+                }
+              />
+
+              <div className="modal-buttons">
+                <button type="submit" className="btn-confirmar">
+                  Confirmar Cita
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMedicoSeleccionado(null)}
+                  className="btn-cancelar"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

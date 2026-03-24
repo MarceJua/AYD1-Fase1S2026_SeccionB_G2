@@ -69,3 +69,42 @@
 
 .btn-aprobar:hover { background-color: #45a049; }
 .btn-rechazar:hover { background-color: #da190b; }
+
+/* Limita y organiza los contenedores de los reportes */
+.reportes-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+  justify-content: center;
+  align-items: flex-start;
+  margin-top: 20px;
+  margin-bottom: 50px;
+}
+
+/* Tarjeta individual de cada reporte */
+.reporte {
+  flex: 1;
+  min-width: 300px;
+  max-width: 450px;
+  background-color: #1e1e1e;
+  color: #f8fafc;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.reporte h3 {
+  color: #ffffff;
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+/* Fuerza al canvas a respetar la altura */
+.reporte canvas {
+  width: 100% !important;
+  max-height: 300px !important;
+}
