@@ -32,7 +32,7 @@ _Este documento centraliza la gestión ágil del proyecto, ceremonias, y evaluac
 - **Fecha:** 5 de Marzo de 2026
 - **Duración:** 1 hora y 30 minutos.
 - **Plataforma:** Google Meet
-- **Grabación:** [Pegar Link del Video Aquí]
+- **Grabación:** [https://drive.google.com/file/d/1HeVPfwh2a47QvBqi0e7tYFQNlqGvKOBZ/view?usp=sharing]
 - **Fin Sprint 1:** 13/03/2026
 
 #### **Roles Presentes:**
@@ -64,7 +64,7 @@ Al finalizar el Sprint 1, SaludPlus debe tener el módulo de autenticación comp
 - **Fecha:** 14 de Marzo de 2026
 - **Duración:** 1 hora.
 - **Plataforma:** Google Meet
-- **Grabación:** [Pegar Link del Video Aquí]
+- **Grabación:** [https://drive.google.com/file/d/1noKI_ytvwMadHz-ohu5AL-lSVRo8C_PD/view?usp=sharing]
 - **Fin Sprint 2:** 22/03/2026
 
 #### **Roles Presentes:**
@@ -110,7 +110,7 @@ _Instrucción: Como las Historias de Usuario completas (con criterios de aceptac
 ### **Retrospectiva Sprint 1**
 
 - **Fecha:** 13 de Marzo de 2026
-- **Grabación:** [https://drive.google.com/file/d/1noKI_ytvwMadHz-ohu5AL-lSVRo8C_PD/view?usp=sharing]
+- **Grabación:** [https://drive.google.com/drive/folders/1bHnDHGAe1PQo_cMJ3BeJ4fkfxL3q4wCV]
 - **Resumen:**
   1. **¿Qué se hizo BIEN durante el Sprint?** La configuración de la infraestructura en Docker fue un éxito rotundo, permitiendo que todos programaran de forma local sin problemas de dependencias. La comunicación para integrar el Frontend y el Backend en los logins fue muy fluida.
   2. **¿Qué se hizo MAL durante el Sprint?** Tuvimos una leve curva de aprendizaje con las reglas estrictas de GitFlow, lo que provocó pequeñas confusiones al momento de nombrar las ramas y hacer los Conventional Commits.
@@ -119,12 +119,14 @@ _Instrucción: Como las Historias de Usuario completas (con criterios de aceptac
 ### **Retrospectiva Sprint 2**
 
 - **Fecha:** 22 de Marzo de 2026
-- **Grabación:** [https://drive.google.com/file/d/1HeVPfwh2a47QvBqi0e7tYFQNlqGvKOBZ/view?usp=sharing]
+- **Grabación:** [https://drive.google.com/drive/folders/1bHnDHGAe1PQo_cMJ3BeJ4fkfxL3q4wCV]
 - **Resumen:**
   1. **¿Qué se hizo BIEN durante el Sprint?** Se logró terminar la lógica compleja de evitar traslapes en las citas y el flujo de los reportes dentro del tiempo límite. El equipo logró acoplarse perfectamente al ritmo acelerado de 9 días por Sprint.
   2. **¿Qué se hizo MAL durante el Sprint?** Al juntar todas las partes visuales al final, tuvimos que invertir tiempo extra estandarizando estilos CSS que no se planificaron desde el inicio.
   3. **¿Qué MEJORAS implementaremos?** Definir componentes UI globales estandarizados desde el Sprint 1 para ahorrar tiempo en la fase final de integración.
 
+
+**Carpeta de grabaciones:** [https://drive.google.com/drive/folders/1bHnDHGAe1PQo_cMJ3BeJ4fkfxL3q4wCV?usp=drive_link]
 ---
 
 ## **6. Gestión en Tablero Kanban**
