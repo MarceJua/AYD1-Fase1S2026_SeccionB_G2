@@ -11,6 +11,10 @@ const LoginPaciente = () => {
     password: "",
   });
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "" });
+  
+  // Estados para el token de verificación (HU-202)
+  const [mostrarTokenInput, setMostrarTokenInput] = useState(false);
+  const [tokenVerificacion, setTokenVerificacion] = useState("");
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -18,10 +22,17 @@ const LoginPaciente = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Preparamos el payload. Si el input del token está visible, lo agregamos.
+    const payload = { ...formData };
+    if (mostrarTokenInput) {
+      payload.token = tokenVerificacion;
+    }
+
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/paciente/login`,
-        formData,
+        payload
       );
 
       // Guardar el token en el navegador
@@ -33,9 +44,19 @@ const LoginPaciente = () => {
       // Redirigir a la página principal del paciente (HU-007)
       setTimeout(() => navigate("/dashboard"), 1500);
     } catch (error) {
+      // INTERCEPTAR LÓGICA DEL TOKEN (HU-202)
+      if (error.response?.data?.requiereToken) {
+        setMostrarTokenInput(true);
+        setMensaje({
+          texto: "⚠️ " + error.response.data.error,
+          tipo: "error", // Aparecerá rojo para llamar la atención
+        });
+        return; // Salimos de la función para no ejecutar el error normal
+      }
+
+      // Lógica de error normal
       setMensaje({
-        texto:
-          "❌ " + (error.response?.data?.error || "Credenciales inválidas"),
+        texto: "❌ " + (error.response?.data?.error || "Credenciales inválidas"),
         tipo: "error",
       });
     }
@@ -59,6 +80,7 @@ const LoginPaciente = () => {
             placeholder="Correo electrónico"
             required
             onChange={handleChange}
+            disabled={mostrarTokenInput} // Bloqueamos el correo si ya estamos validando token
           />
           <input
             className="auth-input"
@@ -67,9 +89,26 @@ const LoginPaciente = () => {
             placeholder="Contraseña"
             required
             onChange={handleChange}
+            disabled={mostrarTokenInput} // Bloqueamos la contra si ya estamos validando token
           />
+
+          {/* NUEVO INPUT CONDICIONAL PARA EL TOKEN */}
+          {mostrarTokenInput && (
+            <input
+              className="auth-input token-input"
+              type="text"
+              name="token"
+              placeholder="Código de verificación (Ej. A7B9X2)"
+              required
+              maxLength="6"
+              value={tokenVerificacion}
+              onChange={(e) => setTokenVerificacion(e.target.value.toUpperCase())}
+              style={{ letterSpacing: '3px', textAlign: 'center', fontWeight: 'bold' }}
+            />
+          )}
+
           <button className="auth-button" type="submit">
-            Entrar a mi portal
+            {mostrarTokenInput ? "Verificar y Entrar" : "Entrar a mi portal"}
           </button>
         </form>
 

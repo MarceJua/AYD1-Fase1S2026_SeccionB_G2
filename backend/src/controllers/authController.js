@@ -128,7 +128,7 @@ const enviarCorreoVerificacion = async (correo, nombre, token) => {
 
 // INICIO DE SESIÓN DE PACIENTE
 const loginPaciente = async (req, res) => {
-  const { correo, password, token } = req.body;
+  const { correo, password, token: tokenVerificacionIngresado } = req.body;
 
   try {
     // 1. Buscar al usuario
@@ -156,9 +156,9 @@ const loginPaciente = async (req, res) => {
       return res.status(400).json({ error: "Credenciales inválidas" });
     }
 
-    if (!paciente.correo_verificado) {
+    if (!usuario.correo_verificado) {
       // Si su correo NO está verificado, EXIGIMOS que mande el token en la petición
-      if (!token) {
+      if (!tokenVerificacionIngresado) {
         return res.status(403).json({
           error:
             "Primer inicio de sesión. Por favor, ingrese el token de verificación enviado a su correo.",
@@ -168,7 +168,9 @@ const loginPaciente = async (req, res) => {
 
       // ---HU-202: VALIDACIÓN DE CORREO ---
       // Validamos que el token ingresado coincida con el de la base de datos
-      if (token.toUpperCase() !== paciente.token_verificacion) {
+      if (
+        tokenVerificacionIngresado.toUpperCase() !== usuario.token_verificacion
+      ) {
         return res
           .status(400)
           .json({ error: "El token de verificación es incorrecto." });
@@ -177,12 +179,12 @@ const loginPaciente = async (req, res) => {
       // Si el token es correcto, actualizamos la base de datos
       await pool.query(
         "UPDATE pacientes SET correo_verificado = TRUE, token_verificacion = NULL WHERE id = $1",
-        [paciente.id],
+        [usuario.id],
       );
     }
 
     // 4. Generar el Token de Sesión
-    const token = jwt.sign(
+    const tokenSesion = jwt.sign(
       { id: usuario.id, rol: usuario.rol },
       process.env.JWT_SECRET || "mi_clave_secreta",
       { expiresIn: "8h" },
@@ -190,7 +192,7 @@ const loginPaciente = async (req, res) => {
 
     res.json({
       mensaje: "Inicio de sesión exitoso",
-      token,
+      token: tokenSesion,
       usuario: { id: usuario.id, nombre: usuario.nombre, rol: usuario.rol },
     });
   } catch (error) {
@@ -286,7 +288,7 @@ const registrarMedico = async (req, res) => {
 
 // INICIO DE SESIÓN DE MÉDICO (HU-002)
 const loginMedico = async (req, res) => {
-  const { correo, password } = req.body;
+  const { correo, password, token: tokenVerificacionIngresado } = req.body;
 
   try {
     // 1. Buscar al médico en la tabla que creamos
@@ -315,7 +317,7 @@ const loginMedico = async (req, res) => {
 
     // --- HU-202: VALIDACIÓN DE CORREO ---
     if (!medico.correo_verificado) {
-      if (!token) {
+      if (!tokenVerificacionIngresado) {
         return res.status(403).json({
           error:
             "Primer inicio de sesión. Por favor, ingrese el token de verificación enviado a su correo.",
@@ -323,7 +325,9 @@ const loginMedico = async (req, res) => {
         });
       }
 
-      if (token.toUpperCase() !== medico.token_verificacion) {
+      if (
+        tokenVerificacionIngresado.toUpperCase() !== medico.token_verificacion
+      ) {
         return res
           .status(400)
           .json({ error: "El token de verificación es incorrecto." });
@@ -336,7 +340,7 @@ const loginMedico = async (req, res) => {
     }
 
     // 4. Generar Token de Sesión (Igual que pacientes, pero con rol 'medico')
-    const token = jwt.sign(
+    const tokenSesion = jwt.sign(
       { id: medico.id, rol: "medico" },
       process.env.JWT_SECRET || "mi_clave_secreta",
       { expiresIn: "8h" },
@@ -344,7 +348,7 @@ const loginMedico = async (req, res) => {
 
     res.json({
       mensaje: "Inicio de sesión exitoso",
-      token,
+      token: tokenSesion,
       usuario: {
         id: medico.id,
         nombre: medico.nombre,
