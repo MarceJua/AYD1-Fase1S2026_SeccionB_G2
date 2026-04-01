@@ -15,7 +15,9 @@ CREATE TABLE IF NOT EXISTS pacientes (
     password VARCHAR(255) NOT NULL,
     rol VARCHAR(20) DEFAULT 'paciente',
     estado VARCHAR(20) DEFAULT 'pendiente',
-    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    token_verificacion VARCHAR(6),
+    correo_verificado BOOLEAN DEFAULT FALSE
 );
 
 -- Tabla de Médicos (HU-002)
@@ -36,7 +38,9 @@ CREATE TABLE IF NOT EXISTS medicos (
     contrasena TEXT NOT NULL,
     rol VARCHAR(20) DEFAULT 'medico',
     estado VARCHAR(20) DEFAULT 'pendiente',
-    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    token_verificacion VARCHAR(6),
+    correo_verificado BOOLEAN DEFAULT FALSE
 );
 
 -- Tabla de Citas (HU-007, referenciada en reportes HU-012)
