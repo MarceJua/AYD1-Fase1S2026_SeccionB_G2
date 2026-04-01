@@ -3,9 +3,11 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
 const path = require("path");
+const nodemailer = require("nodemailer");
 
 // REGISTRO DE PACIENTE
 const registrarPaciente = async (req, res) => {
+  const tokenVerificacion = generarToken();
   // 1. Extraer TODOS los campos que pide el enunciado
   const {
     nombre,
@@ -42,8 +44,8 @@ const registrarPaciente = async (req, res) => {
     const nuevoPaciente = await pool.query(
       `INSERT INTO pacientes (
         nombre, apellido, dpi, genero, direccion, telefono, 
-        fecha_nacimiento, foto, correo, password, rol, estado
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
+        fecha_nacimiento, foto, correo, password, rol, estado, token_verificacion
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) 
       RETURNING id, nombre, correo, estado`,
       [
         nombre,
@@ -58,8 +60,10 @@ const registrarPaciente = async (req, res) => {
         passwordEncriptada,
         "paciente",
         "pendiente",
+        tokenVerificacion,
       ],
     );
+    await enviarCorreoVerificacion(correo, nombre, tokenVerificacion);
 
     res.status(201).json({
       mensaje:
@@ -74,9 +78,57 @@ const registrarPaciente = async (req, res) => {
   }
 };
 
+// Función para generar un token alfanumérico de 6 caracteres
+const generarToken = () => {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+};
+
+// Función para enviar el correo con la plantilla solicitada en la rúbrica
+const enviarCorreoVerificacion = async (correo, nombre, token) => {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  const mailOptions = {
+    from: `"Clínica SaludPlus" <${process.env.EMAIL_USER}>`,
+    to: correo,
+    subject: "¡Bienvenido a SaludPlus! Código de Verificación",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+        <div style="text-align: center;">
+          <img src="https://cdn-icons-png.flaticon.com/512/2966/2966327.png" alt="SaludPlus Logo" style="width: 80px; margin-bottom: 20px;">
+        </div>
+        <h2 style="color: #0056b3; text-align: center;">¡Bienvenido a SaludPlus, ${nombre}!</h2>
+        <p style="color: #555; font-size: 16px;">Nos alegra mucho tenerte en nuestra plataforma. Para activar tu cuenta de forma segura y evitar el spam, necesitamos verificar tu correo electrónico.</p>
+        
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0;">
+          <p style="margin: 0; color: #333; font-size: 14px;">Tu código de verificación es:</p>
+          <h1 style="color: #28a745; letter-spacing: 5px; margin: 10px 0;">${token}</h1>
+        </div>
+
+        <h3 style="color: #333;">Instrucciones para tu primer ingreso:</h3>
+        <ol style="color: #555; font-size: 14px; line-height: 1.6;">
+          <li>Espera a que el Administrador apruebe tu perfil en el sistema.</li>
+          <li>Ve a la pantalla de Inicio de Sesión de SaludPlus.</li>
+          <li>Ingresa tu correo, tu contraseña y este código de verificación.</li>
+          <li>¡Listo! Tu correo quedará verificado de forma permanente.</li>
+        </ol>
+        
+        <p style="color: #999; font-size: 12px; text-align: center; margin-top: 30px;">Si no solicitaste este registro, por favor ignora este correo.</p>
+      </div>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
 // INICIO DE SESIÓN DE PACIENTE
 const loginPaciente = async (req, res) => {
-  const { correo, password } = req.body;
+  const { correo, password, token: tokenVerificacionIngresado } = req.body;
 
   try {
     // 1. Buscar al usuario
@@ -104,8 +156,35 @@ const loginPaciente = async (req, res) => {
       return res.status(400).json({ error: "Credenciales inválidas" });
     }
 
+    if (!usuario.correo_verificado) {
+      // Si su correo NO está verificado, EXIGIMOS que mande el token en la petición
+      if (!tokenVerificacionIngresado) {
+        return res.status(403).json({
+          error:
+            "Primer inicio de sesión. Por favor, ingrese el token de verificación enviado a su correo.",
+          requiereToken: true, // Mandamos esta bandera para que el Frontend sepa qué mostrar
+        });
+      }
+
+      // ---HU-202: VALIDACIÓN DE CORREO ---
+      // Validamos que el token ingresado coincida con el de la base de datos
+      if (
+        tokenVerificacionIngresado.toUpperCase() !== usuario.token_verificacion
+      ) {
+        return res
+          .status(400)
+          .json({ error: "El token de verificación es incorrecto." });
+      }
+
+      // Si el token es correcto, actualizamos la base de datos
+      await pool.query(
+        "UPDATE pacientes SET correo_verificado = TRUE, token_verificacion = NULL WHERE id = $1",
+        [usuario.id],
+      );
+    }
+
     // 4. Generar el Token de Sesión
-    const token = jwt.sign(
+    const tokenSesion = jwt.sign(
       { id: usuario.id, rol: usuario.rol },
       process.env.JWT_SECRET || "mi_clave_secreta",
       { expiresIn: "8h" },
@@ -113,7 +192,7 @@ const loginPaciente = async (req, res) => {
 
     res.json({
       mensaje: "Inicio de sesión exitoso",
-      token,
+      token: tokenSesion,
       usuario: { id: usuario.id, nombre: usuario.nombre, rol: usuario.rol },
     });
   } catch (error) {
@@ -125,6 +204,7 @@ const loginPaciente = async (req, res) => {
 // REGISTRO DE MÉDICO (HU-002)
 const registrarMedico = async (req, res) => {
   // 1. Extraer los campos del cuerpo de la petición (req.body)
+  const tokenVerificacion = generarToken();
   const {
     nombre,
     apellido,
@@ -171,8 +251,8 @@ const registrarMedico = async (req, res) => {
       `INSERT INTO medicos (
         nombre, apellido, dpi, fecha_nacimiento, genero, 
         direccion, telefono, foto, numero_colegiado, 
-        especialidad, direccion_clinica, correo, contrasena, estado
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
+        especialidad, direccion_clinica, correo, contrasena, estado, token_verificacion
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) 
       RETURNING id, nombre, correo, estado`,
       [
         nombre,
@@ -189,8 +269,11 @@ const registrarMedico = async (req, res) => {
         correo,
         passwordEncriptada,
         "pendiente",
+        tokenVerificacion,
       ],
     );
+
+    await enviarCorreoVerificacion(correo, nombre, tokenVerificacion);
 
     res.status(201).json({
       mensaje:
@@ -205,7 +288,7 @@ const registrarMedico = async (req, res) => {
 
 // INICIO DE SESIÓN DE MÉDICO (HU-002)
 const loginMedico = async (req, res) => {
-  const { correo, password } = req.body;
+  const { correo, password, token: tokenVerificacionIngresado } = req.body;
 
   try {
     // 1. Buscar al médico en la tabla que creamos
@@ -232,8 +315,32 @@ const loginMedico = async (req, res) => {
       return res.status(400).json({ error: "Credenciales inválidas" });
     }
 
+    // --- HU-202: VALIDACIÓN DE CORREO ---
+    if (!medico.correo_verificado) {
+      if (!tokenVerificacionIngresado) {
+        return res.status(403).json({
+          error:
+            "Primer inicio de sesión. Por favor, ingrese el token de verificación enviado a su correo.",
+          requiereToken: true,
+        });
+      }
+
+      if (
+        tokenVerificacionIngresado.toUpperCase() !== medico.token_verificacion
+      ) {
+        return res
+          .status(400)
+          .json({ error: "El token de verificación es incorrecto." });
+      }
+
+      await pool.query(
+        "UPDATE medicos SET correo_verificado = TRUE, token_verificacion = NULL WHERE id = $1",
+        [medico.id],
+      );
+    }
+
     // 4. Generar Token de Sesión (Igual que pacientes, pero con rol 'medico')
-    const token = jwt.sign(
+    const tokenSesion = jwt.sign(
       { id: medico.id, rol: "medico" },
       process.env.JWT_SECRET || "mi_clave_secreta",
       { expiresIn: "8h" },
@@ -241,7 +348,7 @@ const loginMedico = async (req, res) => {
 
     res.json({
       mensaje: "Inicio de sesión exitoso",
-      token,
+      token: tokenSesion,
       usuario: {
         id: medico.id,
         nombre: medico.nombre,
@@ -567,11 +674,9 @@ const reporteEspecialidades = async (req, res) => {
     res.json(data);
   } catch (error) {
     console.error("Error en reporteEspecialidades:", error);
-    res
-      .status(500)
-      .json({
-        error: "Error interno al generar el reporte de especialidades.",
-      });
+    res.status(500).json({
+      error: "Error interno al generar el reporte de especialidades.",
+    });
   }
 };
 
