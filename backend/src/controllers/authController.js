@@ -128,7 +128,7 @@ const enviarCorreoVerificacion = async (correo, nombre, token) => {
 
 // INICIO DE SESIÓN DE PACIENTE
 const loginPaciente = async (req, res) => {
-  const { correo, password } = req.body;
+  const { correo, password, token } = req.body;
 
   try {
     // 1. Buscar al usuario
@@ -154,6 +154,31 @@ const loginPaciente = async (req, res) => {
     const passwordValida = await bcrypt.compare(password, usuario.password);
     if (!passwordValida) {
       return res.status(400).json({ error: "Credenciales inválidas" });
+    }
+
+    if (!paciente.correo_verificado) {
+      // Si su correo NO está verificado, EXIGIMOS que mande el token en la petición
+      if (!token) {
+        return res.status(403).json({
+          error:
+            "Primer inicio de sesión. Por favor, ingrese el token de verificación enviado a su correo.",
+          requiereToken: true, // Mandamos esta bandera para que el Frontend sepa qué mostrar
+        });
+      }
+
+      // ---HU-202: VALIDACIÓN DE CORREO ---
+      // Validamos que el token ingresado coincida con el de la base de datos
+      if (token.toUpperCase() !== paciente.token_verificacion) {
+        return res
+          .status(400)
+          .json({ error: "El token de verificación es incorrecto." });
+      }
+
+      // Si el token es correcto, actualizamos la base de datos
+      await pool.query(
+        "UPDATE pacientes SET correo_verificado = TRUE, token_verificacion = NULL WHERE id = $1",
+        [paciente.id],
+      );
     }
 
     // 4. Generar el Token de Sesión
@@ -286,6 +311,28 @@ const loginMedico = async (req, res) => {
     const passwordValida = await bcrypt.compare(password, medico.contrasena);
     if (!passwordValida) {
       return res.status(400).json({ error: "Credenciales inválidas" });
+    }
+
+    // --- HU-202: VALIDACIÓN DE CORREO ---
+    if (!medico.correo_verificado) {
+      if (!token) {
+        return res.status(403).json({
+          error:
+            "Primer inicio de sesión. Por favor, ingrese el token de verificación enviado a su correo.",
+          requiereToken: true,
+        });
+      }
+
+      if (token.toUpperCase() !== medico.token_verificacion) {
+        return res
+          .status(400)
+          .json({ error: "El token de verificación es incorrecto." });
+      }
+
+      await pool.query(
+        "UPDATE medicos SET correo_verificado = TRUE, token_verificacion = NULL WHERE id = $1",
+        [medico.id],
+      );
     }
 
     // 4. Generar Token de Sesión (Igual que pacientes, pero con rol 'medico')
