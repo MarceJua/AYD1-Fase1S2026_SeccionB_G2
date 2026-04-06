@@ -250,6 +250,32 @@ mis citas activas.
     fecha, hora, nombre del médico, dirección de la clínica y motivo de la cita.
 
 
+### HU-203: Tratamiento Estructurado Médico
+
+**Como** médico,
+**Quiero** registrar un diagnóstico y uno o más medicamentos al atender una cita,
+**Para** ofrecer al paciente un tratamiento estructurado y detallado que pueda consultar e imprimir como receta médica.
+
+- **Story Points:** 8
+- **Prioridad:** Alta (Sprint 2)
+- **Criterios de Aceptación:**
+  - Al dar clic en "Atender", el médico accede a un formulario con:
+    - Campo **Diagnóstico** (obligatorio).
+    - Sección de **Medicamentos** con al menos uno obligatorio; el médico puede agregar o eliminar medicamentos dinámicamente.
+    - Cada medicamento solicita: **Nombre**, **Cantidad**, **Tiempo** y **Descripción de la dosis** (todos obligatorios).
+  - El sistema valida que el diagnóstico no esté vacío y que cada medicamento tenga todos sus campos completos antes de guardar.
+  - Al guardar, la cita cambia de estado a `Atendido` y desaparece de la lista de citas pendientes del médico.
+  - El diagnóstico se almacena en la columna `diagnostico` de la tabla `citas`; cada medicamento se guarda como una fila en la tabla `medicamentos` vinculada a esa cita.
+  - El paciente puede visualizar en su historial el diagnóstico y la tabla de medicamentos recetados (nombre, cantidad, tiempo, descripción de dosis).
+  - El paciente dispone de un botón **"Imprimir Receta Médica"** que genera un PDF con:
+    - Encabezado: nombre de la clínica (SaludPlus), fecha de emisión y teléfono del médico.
+    - Datos del médico: nombre completo, especialidad y número de colegiado.
+    - Diagnóstico.
+    - Tabla con los medicamentos recetados.
+    - Pie de página: nombre del médico, especialidad y número de colegiado.
+
+---
+
 ### HU-019: Cancelar Cita e Historial de Citas del Paciente
 
 **Como** paciente registrado en la plataforma,

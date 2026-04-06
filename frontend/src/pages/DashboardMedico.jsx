@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
+const medicamentoVacio = () => ({ nombre: '', cantidad: '', tiempo: '', descripcion_dosis: '' });
+
 const DashboardMedico = () => {
   const [citas, setCitas] = useState([]);
   const [error, setError] = useState("");
@@ -11,7 +13,8 @@ const DashboardMedico = () => {
   const [historial, setHistorial] = useState([]);
   const [vistaActiva, setVistaActiva] = useState('pendientes');
   const [citaSeleccionada, setCitaSeleccionada] = useState(null);
-  const [tratamiento, setTratamiento] = useState('');
+  const [diagnostico, setDiagnostico] = useState('');
+  const [medicamentos, setMedicamentos] = useState([medicamentoVacio()]);
   const [mensajeExito, setMensajeExito] = useState('');
   const navigate = useNavigate();
 
@@ -85,57 +88,80 @@ const DashboardMedico = () => {
   };
 
   const abrirModal = (cita) => {
-  setCitaSeleccionada(cita);
-  setTratamiento('');
-  setModalVisible(true);
-};
+    setCitaSeleccionada(cita);
+    setDiagnostico('');
+    setMedicamentos([medicamentoVacio()]);
+    setError('');
+    setModalVisible(true);
+  };
 
-// Cierra el modal
-const cerrarModal = () => {
-  setModalVisible(false);
-  setCitaSeleccionada(null);
-  setTratamiento('');
-};
+  const cerrarModal = () => {
+    setModalVisible(false);
+    setCitaSeleccionada(null);
+    setDiagnostico('');
+    setMedicamentos([medicamentoVacio()]);
+  };
 
-// Envía el formulario al backend
-const handleAtenderCita = async (e) => {
-  e.preventDefault();
-  const token = localStorage.getItem('token');
+  const agregarMedicamento = () => {
+    setMedicamentos((prev) => [...prev, medicamentoVacio()]);
+  };
 
-  try {
-    const response = await fetch(`http://localhost:5000/api/medico/citas/${citaSeleccionada.cita_id}/atender`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ tratamiento })
-    });
+  const eliminarMedicamento = (index) => {
+    setMedicamentos((prev) => prev.filter((_, i) => i !== index));
+  };
 
-    const data = await response.json();
+  const actualizarMedicamento = (index, campo, valor) => {
+    setMedicamentos((prev) =>
+      prev.map((med, i) => (i === index ? { ...med, [campo]: valor } : med))
+    );
+  };
 
-    if (response.ok) {
-      // 1. Mostrar mensaje de éxito
-      setMensajeExito(data.mensaje);
-      setTimeout(() => setMensajeExito(''), 3000); // Ocultar después de 3s
-      
-      // 2. Quitar la cita de la tabla (actualizar el estado visualmente)
-      setCitas((prevCitas) => prevCitas.filter((c) => c.cita_id !== citaSeleccionada.cita_id));
-      
-      // 3. Cerrar el modal
-      cerrarModal();
+  const handleAtenderCita = async (e) => {
+    e.preventDefault();
+    setError('');
 
-      if (vistaActiva === "historial") {
-        fetchHistorial();
-      }
-
-        } else {
-        setError(data.error);
-        }
-      } catch {
-        setError('Error de conexión al guardar el tratamiento.');
+    if (!diagnostico.trim()) {
+      setError("El diagnóstico es obligatorio.");
+      return;
     }
-};
+    const todosCompletos = medicamentos.every(
+      (m) => m.nombre.trim() && m.cantidad.trim() && m.tiempo.trim() && m.descripcion_dosis.trim()
+    );
+    if (!todosCompletos) {
+      setError("Todos los campos de cada medicamento son obligatorios.");
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`${API}/medico/citas/${citaSeleccionada.cita_id}/atender`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          diagnostico: diagnostico.trim(),
+          medicamentos: medicamentos.map((m) => ({
+            nombre: m.nombre.trim(),
+            cantidad: m.cantidad.trim(),
+            tiempo: m.tiempo.trim(),
+            descripcion_dosis: m.descripcion_dosis.trim(),
+          })),
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setMensajeExito(data.mensaje);
+        setTimeout(() => setMensajeExito(''), 3000);
+        setCitas((prevCitas) => prevCitas.filter((c) => c.cita_id !== citaSeleccionada.cita_id));
+        cerrarModal();
+        if (vistaActiva === "historial") fetchHistorial();
+      } else {
+        setError(data.error);
+      }
+    } catch {
+      setError('Error de conexión al guardar el tratamiento.');
+    }
+  };
 
 // Función para cancelar la cita
 const handleCancelarCita = async (cita) => {
@@ -292,12 +318,12 @@ const handleCancelarCita = async (cita) => {
           </>
         )}
 
-        {/* Modal para Atender Paciente */}
+        {/* Modal para Atender Paciente - HU-203 */}
         {modalVisible && (
           <div style={styles.modalOverlay} onClick={cerrarModal}>
             <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
               <h2 style={styles.modalTitulo}>Atender Paciente</h2>
-              
+
               <div style={styles.modalInfo}>
                 <p style={styles.modalParagrafo}>
                   <strong style={styles.modalLabel}>Paciente:</strong> {citaSeleccionada?.paciente_nombre} {citaSeleccionada?.paciente_apellido}
@@ -306,37 +332,102 @@ const handleCancelarCita = async (cita) => {
                   <strong style={styles.modalLabel}>Motivo:</strong> {citaSeleccionada?.motivo}
                 </p>
               </div>
-              
+
+              {error && <div style={styles.alertError}>{error}</div>}
+
               <form onSubmit={handleAtenderCita}>
+                {/* Diagnóstico */}
                 <div style={styles.formGroup}>
-                  <label style={styles.formLabel}>Tratamiento a seguir:</label>
-                  <textarea 
-                    style={styles.textarea}
+                  <label style={styles.formLabel}>Diagnóstico <span style={{ color: '#f87171' }}>*</span></label>
+                  <input
+                    type="text"
+                    style={styles.inputField}
                     required
-                    rows="5"
-                    placeholder="Ingrese el diagnóstico y tratamiento recetado..."
-                    value={tratamiento}
-                    onChange={(e) => setTratamiento(e.target.value)}
-                  ></textarea>
+                    placeholder="Ej: Diabetes tipo 2, Arritmia cardíaca..."
+                    value={diagnostico}
+                    onChange={(e) => setDiagnostico(e.target.value)}
+                  />
                 </div>
+
+                {/* Sección Medicamentos */}
+                <div style={styles.seccionMedicamentos}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <span style={styles.seccionLabel}>Medicamentos <span style={{ color: '#f87171' }}>*</span></span>
+                    <button type="button" style={styles.btnAgregar} onClick={agregarMedicamento}>
+                      + Agregar medicamento
+                    </button>
+                  </div>
+
+                  {medicamentos.map((med, index) => (
+                    <div key={index} style={styles.medicamentoCard}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <span style={{ color: '#94a3b8', fontSize: 12, fontWeight: 600 }}>Medicamento {index + 1}</span>
+                        {medicamentos.length > 1 && (
+                          <button type="button" style={styles.btnEliminar} onClick={() => eliminarMedicamento(index)}>
+                            Eliminar
+                          </button>
+                        )}
+                      </div>
+                      <div style={styles.medGrid}>
+                        <div style={styles.formGroup}>
+                          <label style={styles.formLabelSmall}>Nombre <span style={{ color: '#f87171' }}>*</span></label>
+                          <input
+                            type="text"
+                            style={styles.inputField}
+                            placeholder="Ej: Metformina"
+                            value={med.nombre}
+                            onChange={(e) => actualizarMedicamento(index, 'nombre', e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div style={styles.formGroup}>
+                          <label style={styles.formLabelSmall}>Cantidad <span style={{ color: '#f87171' }}>*</span></label>
+                          <input
+                            type="text"
+                            style={styles.inputField}
+                            placeholder="Ej: 1 caja, 2 frascos"
+                            value={med.cantidad}
+                            onChange={(e) => actualizarMedicamento(index, 'cantidad', e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div style={styles.formGroup}>
+                          <label style={styles.formLabelSmall}>Tiempo <span style={{ color: '#f87171' }}>*</span></label>
+                          <input
+                            type="text"
+                            style={styles.inputField}
+                            placeholder="Ej: 15 días, 1 mes"
+                            value={med.tiempo}
+                            onChange={(e) => actualizarMedicamento(index, 'tiempo', e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div style={styles.formGroup}>
+                          <label style={styles.formLabelSmall}>Descripción de dosis <span style={{ color: '#f87171' }}>*</span></label>
+                          <input
+                            type="text"
+                            style={styles.inputField}
+                            placeholder="Ej: Tomar 1 pastilla cada 8 horas"
+                            value={med.descripcion_dosis}
+                            onChange={(e) => actualizarMedicamento(index, 'descripcion_dosis', e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
                 <div style={styles.modalAcciones}>
-                  <button 
-                    type="button" 
-                    style={styles.btnModalCancelar}
-                    onClick={cerrarModal}
-                  >
+                  <button type="button" style={styles.btnModalCancelar} onClick={cerrarModal}>
                     Cancelar
                   </button>
-                  <button 
-                    type="submit" 
-                    style={styles.btnModalGuardar}
-                  >
+                  <button type="submit" style={styles.btnModalGuardar}>
                     Guardar Tratamiento
                   </button>
                 </div>
               </form>
 
-              {/* Mensaje de éxito */}
               {mensajeExito && (
                 <div style={styles.alertExitoModal}>
                   <span>✅</span>
@@ -566,8 +657,10 @@ const styles = {
     border: "1px solid rgba(148, 163, 184, 0.25)",
     borderRadius: 16,
     padding: "28px",
-    maxWidth: 500,
-    width: "90%",
+    maxWidth: 700,
+    width: "95%",
+    maxHeight: "90vh",
+    overflowY: "auto",
     boxShadow: "0 20px 60px rgba(0, 0, 0, 0.5)",
     backdropFilter: "blur(10px)",
     animation: "slideIn 0.3s ease-out",
@@ -648,6 +741,69 @@ const styles = {
     fontWeight: 700,
     boxShadow: "0 4px 15px rgba(56, 189, 248, 0.3)",
     transition: "all 0.2s",
+  },
+  inputField: {
+    width: "100%",
+    background: "rgba(15, 23, 42, 0.8)",
+    border: "1px solid rgba(148, 163, 184, 0.25)",
+    borderRadius: 8,
+    color: "#f1f5f9",
+    fontSize: 13,
+    padding: "9px 12px",
+    fontFamily: "'Segoe UI', system-ui, sans-serif",
+    outline: "none",
+    boxSizing: "border-box",
+  },
+  seccionMedicamentos: {
+    marginBottom: 20,
+    background: "rgba(15, 23, 42, 0.3)",
+    borderRadius: 10,
+    padding: "14px",
+    border: "1px solid rgba(148, 163, 184, 0.15)",
+  },
+  seccionLabel: {
+    color: "#e2e8f0",
+    fontSize: 13,
+    fontWeight: 700,
+  },
+  medicamentoCard: {
+    background: "rgba(30, 41, 59, 0.7)",
+    borderRadius: 8,
+    padding: "12px",
+    marginBottom: 10,
+    border: "1px solid rgba(148, 163, 184, 0.15)",
+  },
+  medGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "10px",
+  },
+  formLabelSmall: {
+    display: "block",
+    color: "#94a3b8",
+    fontSize: 11,
+    fontWeight: 600,
+    marginBottom: 5,
+  },
+  btnAgregar: {
+    background: "rgba(56, 189, 248, 0.12)",
+    border: "1px solid rgba(56,189,248,0.4)",
+    color: "#7dd3fc",
+    borderRadius: 7,
+    padding: "5px 12px",
+    fontSize: 12,
+    cursor: "pointer",
+    fontWeight: 600,
+  },
+  btnEliminar: {
+    background: "rgba(239, 68, 68, 0.1)",
+    border: "1px solid rgba(248,113,113,0.4)",
+    color: "#fca5a5",
+    borderRadius: 6,
+    padding: "3px 9px",
+    fontSize: 11,
+    cursor: "pointer",
+    fontWeight: 600,
   },
   alertExitoModal: {
     background: "rgba(34, 197, 94, 0.1)",

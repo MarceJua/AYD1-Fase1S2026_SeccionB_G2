@@ -84,17 +84,94 @@ const MisCitas = () => {
     return fecha.toLocaleDateString("es-ES");
   };
 
+  const imprimirReceta = (cita) => {
+    const ventana = window.open('', '_blank');
+    const fechaEmision = new Date().toLocaleDateString('es-ES');
+    const medicamentosHTML = Array.isArray(cita.medicamentos) && cita.medicamentos.length > 0
+      ? cita.medicamentos.map((m) => `
+          <tr>
+            <td>${m.nombre}</td>
+            <td>${m.cantidad}</td>
+            <td>${m.tiempo}</td>
+            <td>${m.descripcion_dosis}</td>
+          </tr>`).join('')
+      : '<tr><td colspan="4" style="text-align:center;color:#888;">Sin medicamentos registrados</td></tr>';
+
+    ventana.document.write(`<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Receta Médica - SaludPlus</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
+    .header { text-align: center; border-bottom: 3px solid #0056b3; padding-bottom: 20px; margin-bottom: 30px; }
+    .header h1 { color: #0056b3; margin: 0 0 5px; font-size: 30px; }
+    .header p { margin: 4px 0; color: #555; font-size: 14px; }
+    .section { margin-bottom: 25px; }
+    .section h3 { color: #0056b3; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 12px; }
+    .section p { margin: 5px 0; font-size: 14px; }
+    .diagnostico-box { background: #f0f7ff; border-left: 4px solid #0056b3; padding: 12px 16px; border-radius: 4px; font-size: 15px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th { background-color: #0056b3; color: white; padding: 10px 12px; text-align: left; font-size: 13px; }
+    td { padding: 9px 12px; border-bottom: 1px solid #eee; font-size: 13px; }
+    tr:nth-child(even) td { background-color: #f8f9fa; }
+    .footer { margin-top: 60px; text-align: right; border-top: 2px solid #ccc; padding-top: 16px; }
+    .footer p { margin: 3px 0; font-size: 14px; }
+    @media print { body { margin: 20px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Clínica SaludPlus</h1>
+    <p>Fecha de emisión: ${fechaEmision}</p>
+    <p>Teléfono de contacto: ${cita.medico_telefono || 'N/A'}</p>
+  </div>
+  <div class="section">
+    <h3>Información del Médico</h3>
+    <p><strong>Médico:</strong> Dr/Dra. ${cita.medico_nombre} ${cita.medico_apellido}</p>
+    <p><strong>Especialidad:</strong> ${cita.especialidad}</p>
+    <p><strong>N° Colegiado:</strong> ${cita.numero_colegiado || 'N/A'}</p>
+  </div>
+  <div class="section">
+    <h3>Diagnóstico</h3>
+    <div class="diagnostico-box">${cita.diagnostico || 'Sin diagnóstico registrado'}</div>
+  </div>
+  <div class="section">
+    <h3>Medicamentos Recetados</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Medicamento</th>
+          <th>Cantidad</th>
+          <th>Tiempo</th>
+          <th>Descripción de la Dosis</th>
+        </tr>
+      </thead>
+      <tbody>${medicamentosHTML}</tbody>
+    </table>
+  </div>
+  <div class="footer">
+    <p><strong>Dr/Dra. ${cita.medico_nombre} ${cita.medico_apellido}</strong></p>
+    <p>${cita.especialidad}</p>
+    <p>Colegiado N°: ${cita.numero_colegiado || 'N/A'}</p>
+  </div>
+  <script>window.onload = function() { window.print(); }<\/script>
+</body>
+</html>`);
+    ventana.document.close();
+  };
+
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
         <div className="header-top">
-          <h1>📅 Gestión de Citas</h1>
+          <h1> Gestión de Citas</h1>
           <button
             onClick={() => navigate("/dashboard")}
             className="btn-ver-horarios"
             style={{ width: "auto" }}
           >
-            ⬅️ Volver al Dashboard
+            ⬅ Volver al Dashboard
           </button>
         </div>
         <p>Revisa tus consultas programadas y tu historial de atención</p>
@@ -151,7 +228,7 @@ const MisCitas = () => {
             textAlign: "center",
           }}
         >
-          ⚠️ {errorMensaje}
+           {errorMensaje}
         </div>
       )}
 
@@ -182,10 +259,10 @@ const MisCitas = () => {
                   }}
                 >
                   <span>
-                    <strong>📅 Fecha:</strong> {formatearFecha(cita.fecha)}
+                    <strong>Fecha:</strong> {formatearFecha(cita.fecha)}
                   </span>
                   <span>
-                    <strong>⏰ Hora:</strong> {cita.hora.slice(0, 5)}
+                    <strong> Hora:</strong> {cita.hora.slice(0, 5)}
                   </span>
                 </div>
                 <p>
@@ -259,18 +336,76 @@ const MisCitas = () => {
                 </p>
 
                 {(cita.estado_mostrable || cita.estado) === "Atendido" && (
-                  <div
-                    style={{
-                      marginTop: "10px",
-                      padding: "10px",
-                      backgroundColor: "#d4edda",
-                      borderRadius: "5px",
-                      fontSize: "14px",
-                      color: "#155724",
-                    }}
-                  >
-                    <strong>💊 Tratamiento:</strong>{" "}
-                    {cita.tratamiento || "Sin indicaciones adicionales."}
+                  <div style={{ marginTop: "10px" }}>
+                    {/* Diagnóstico */}
+                    <div
+                      style={{
+                        padding: "10px",
+                        backgroundColor: "#d4edda",
+                        borderRadius: "5px",
+                        fontSize: "14px",
+                        color: "#155724",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <strong>Diagnóstico:</strong>{" "}
+                      {cita.diagnostico || cita.tratamiento || "Sin diagnóstico registrado."}
+                    </div>
+
+                    {/* Medicamentos */}
+                    {Array.isArray(cita.medicamentos) && cita.medicamentos.length > 0 && (
+                      <div
+                        style={{
+                          padding: "10px",
+                          backgroundColor: "#e8f4fd",
+                          borderRadius: "5px",
+                          fontSize: "13px",
+                          color: "#0c5460",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        <strong>Medicamentos recetados:</strong>
+                        <table style={{ width: "100%", marginTop: "8px", borderCollapse: "collapse" }}>
+                          <thead>
+                            <tr style={{ backgroundColor: "#0056b3", color: "white" }}>
+                              <th style={{ padding: "6px 8px", textAlign: "left", fontSize: "12px" }}>Medicamento</th>
+                              <th style={{ padding: "6px 8px", textAlign: "left", fontSize: "12px" }}>Cantidad</th>
+                              <th style={{ padding: "6px 8px", textAlign: "left", fontSize: "12px" }}>Tiempo</th>
+                              <th style={{ padding: "6px 8px", textAlign: "left", fontSize: "12px" }}>Dosis</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {cita.medicamentos.map((med, i) => (
+                              <tr key={i} style={{ backgroundColor: i % 2 === 0 ? "#f8f9fa" : "white" }}>
+                                <td style={{ padding: "5px 8px", fontSize: "12px" }}>{med.nombre}</td>
+                                <td style={{ padding: "5px 8px", fontSize: "12px" }}>{med.cantidad}</td>
+                                <td style={{ padding: "5px 8px", fontSize: "12px" }}>{med.tiempo}</td>
+                                <td style={{ padding: "5px 8px", fontSize: "12px" }}>{med.descripcion_dosis}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {/* Botón imprimir receta */}
+                    <button
+                      onClick={() => imprimirReceta(cita)}
+                      style={{
+                        width: "100%",
+                        padding: "9px",
+                        backgroundColor: "#0056b3",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "5px",
+                        cursor: "pointer",
+                        fontWeight: "bold",
+                        fontSize: "13px",
+                        marginTop: "4px",
+                      }}
+                    >
+                      Imprimir Receta Médica
+                    </button>
                   </div>
                 )}
                 {(cita.estado_mostrable || cita.estado).startsWith("Cancelada") && (

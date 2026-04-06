@@ -36,41 +36,58 @@ const obtenerCitasPendientes = async (req, res) => {
 
 /**
  * PUT /api/medico/citas/:id/atender
- * Cambia el estado de la cita a 'Atendido' y guarda el tratamiento
+ * Cambia el estado de la cita a 'Atendido', guarda el diagnóstico y los medicamentos (HU-203)
  */
 const atenderPaciente = async (req, res) => {
   const medicoId = req.medico.id;
   const citaId = req.params.id;
-  const { tratamiento } = req.body;
+  const { diagnostico, medicamentos } = req.body;
 
-  if (!tratamiento || tratamiento.trim() === "") {
-    return res.status(400).json({ error: "El tratamiento es obligatorio." });
+  if (!diagnostico || diagnostico.trim() === "") {
+    return res.status(400).json({ error: "El diagnóstico es obligatorio." });
+  }
+  if (!medicamentos || !Array.isArray(medicamentos) || medicamentos.length === 0) {
+    return res.status(400).json({ error: "Debe agregar al menos un medicamento." });
+  }
+  for (const med of medicamentos) {
+    if (!med.nombre?.trim() || !med.cantidad?.trim() || !med.tiempo?.trim() || !med.descripcion_dosis?.trim()) {
+      return res.status(400).json({ error: "Todos los campos de cada medicamento son obligatorios." });
+    }
   }
 
+  const client = await pool.connect();
   try {
+    await client.query("BEGIN");
+
     const updateQuery = `
       UPDATE citas
-      SET estado = 'Atendido', tratamiento = $1
+      SET estado = 'Atendido', diagnostico = $1
       WHERE id = $2 AND medico_id = $3 AND estado = 'activa'
       RETURNING id
     `;
-
-    const result = await pool.query(updateQuery, [
-      tratamiento,
-      citaId,
-      medicoId,
-    ]);
+    const result = await client.query(updateQuery, [diagnostico.trim(), citaId, medicoId]);
 
     if (result.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ error: "Cita no encontrada o ya fue procesada." });
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Cita no encontrada o ya fue procesada." });
     }
 
+    for (const med of medicamentos) {
+      await client.query(
+        `INSERT INTO medicamentos (cita_id, nombre, cantidad, tiempo, descripcion_dosis)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [citaId, med.nombre.trim(), med.cantidad.trim(), med.tiempo.trim(), med.descripcion_dosis.trim()]
+      );
+    }
+
+    await client.query("COMMIT");
     res.json({ mensaje: "Paciente atendido correctamente." });
   } catch (error) {
+    await client.query("ROLLBACK");
     console.error("Error al atender paciente:", error);
     res.status(500).json({ error: "Error interno al actualizar la cita." });
+  } finally {
+    client.release();
   }
 };
 

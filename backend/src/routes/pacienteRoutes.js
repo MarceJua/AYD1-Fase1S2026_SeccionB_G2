@@ -241,13 +241,13 @@ router.put("/cita/:cita_id/cancelar", async (req, res) => {
   }
 });
 
-// HU-019: Obtener historial de citas (Canceladas y Atendidas)
+// HU-019 + HU-203: Obtener historial de citas con diagnóstico y medicamentos estructurados
 router.get("/historial-citas/:paciente_id", async (req, res) => {
   const { paciente_id } = req.params;
 
   try {
     const result = await pool.query(
-      `SELECT c.id, c.fecha, c.hora, c.motivo, c.estado, c.tratamiento,
+      `SELECT c.id, c.fecha, c.hora, c.motivo, c.estado, c.tratamiento, c.diagnostico,
               CASE
                 WHEN LOWER(c.estado) = 'atendido' OR LOWER(c.estado) = 'atendida' THEN 'Atendido'
                 WHEN LOWER(c.estado) IN ('cancelada por médico', 'cancelada por medico') THEN 'Cancelada por médico'
@@ -255,10 +255,23 @@ router.get("/historial-citas/:paciente_id", async (req, res) => {
                 ELSE c.estado
               END AS estado_mostrable,
               m.nombre AS medico_nombre, m.apellido AS medico_apellido,
-              m.especialidad, m.direccion_clinica
+              m.especialidad, m.direccion_clinica, m.numero_colegiado, m.telefono AS medico_telefono,
+              COALESCE(
+                json_agg(
+                  json_build_object(
+                    'nombre', med.nombre,
+                    'cantidad', med.cantidad,
+                    'tiempo', med.tiempo,
+                    'descripcion_dosis', med.descripcion_dosis
+                  ) ORDER BY med.id
+                ) FILTER (WHERE med.id IS NOT NULL),
+                '[]'::json
+              ) AS medicamentos
        FROM citas c
        JOIN medicos m ON m.id = c.medico_id
+       LEFT JOIN medicamentos med ON med.cita_id = c.id
        WHERE c.paciente_id = $1 AND LOWER(c.estado) <> 'activa'
+       GROUP BY c.id, m.nombre, m.apellido, m.especialidad, m.direccion_clinica, m.numero_colegiado, m.telefono
        ORDER BY c.fecha DESC, c.hora DESC`,
       [paciente_id],
     );

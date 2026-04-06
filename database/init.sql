@@ -52,7 +52,21 @@ CREATE TABLE IF NOT EXISTS citas (
   hora        TIME NOT NULL,
   motivo      TEXT,
   tratamiento TEXT,
+  diagnostico TEXT,
   estado      VARCHAR(20) DEFAULT 'activa'
+);
+
+-- Migración segura para bases de datos existentes (HU-203)
+ALTER TABLE citas ADD COLUMN IF NOT EXISTS diagnostico TEXT;
+
+-- Tabla de Medicamentos recetados por cita (HU-203)
+CREATE TABLE IF NOT EXISTS medicamentos (
+  id               SERIAL PRIMARY KEY,
+  cita_id          INT REFERENCES citas(id) ON DELETE CASCADE,
+  nombre           VARCHAR(200) NOT NULL,
+  cantidad         VARCHAR(100) NOT NULL,
+  tiempo           VARCHAR(100) NOT NULL,
+  descripcion_dosis TEXT NOT NULL
 );
 
 -- Tabla de Horario del Médico (HU-009)
