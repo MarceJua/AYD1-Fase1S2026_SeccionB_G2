@@ -2,14 +2,15 @@
 
 ## Descripción general
 Este documento describe el modelo entidad-relación de la base de datos del sistema médico.  
-El esquema está compuesto por cuatro entidades principales:
+El esquema está compuesto por cinco entidades principales:
 
 - **pacientes**
 - **medicos**
 - **citas**
 - **horario_medico**
+- **medicamentos**
 
-Estas tablas permiten registrar pacientes, médicos, citas médicas y el horario asignado a cada médico.
+Estas tablas permiten registrar pacientes, médicos, citas médicas, el horario asignado a cada médico y los medicamentos recetados por cita (HU-203).
 
 ---
 
@@ -20,6 +21,7 @@ erDiagram
     PACIENTES ||--o{ CITAS : "agenda"
     MEDICOS   ||--o{ CITAS : "atiende"
     MEDICOS   ||--|| HORARIO_MEDICO : "posee"
+    CITAS     ||--o{ MEDICAMENTOS : "incluye"
 
     PACIENTES {
         int id PK
@@ -65,6 +67,8 @@ erDiagram
         date fecha
         time hora
         text motivo
+        text tratamiento
+        text diagnostico
         varchar estado
     }
 
@@ -74,6 +78,15 @@ erDiagram
         text[] dias
         time hora_inicio
         time hora_fin
+    }
+
+    MEDICAMENTOS {
+        int id PK
+        int cita_id FK
+        varchar nombre
+        varchar cantidad
+        varchar tiempo
+        text descripcion_dosis
     }
 ```
 
@@ -124,16 +137,36 @@ Campos importantes:
 - **fecha**: día de la cita.
 - **hora**: hora de la cita.
 - **motivo**: razón de la consulta.
-- **estado**: estado actual de la cita, por ejemplo `activa`.
+- **tratamiento**: campo legado de texto libre (Fase 1).
+- **diagnostico**: diagnóstico estructurado registrado por el médico al atender (HU-203).
+- **estado**: estado actual de la cita (`activa`, `Atendido`, `Cancelada por médico`, `Cancelada por paciente`).
 
 Interpretación:
 - Un **paciente** puede tener muchas **citas**.
 - Un **médico** puede atender muchas **citas**.
 - Cada **cita** pertenece a un solo paciente y a un solo médico.
+- Una **cita atendida** puede tener uno o más **medicamentos** asociados.
 
 ---
 
-### 4. Tabla `horario_medico`
+### 4. Tabla `medicamentos`
+La tabla **medicamentos** almacena los medicamentos recetados por el médico al atender una cita (HU-203).  
+Cada registro representa un medicamento individual dentro de una receta médica.
+
+Campos importantes:
+- **id**: llave primaria.
+- **cita_id**: llave foránea que referencia a `citas(id)`. Se elimina en cascada si se borra la cita.
+- **nombre**: nombre del medicamento (ej. Metformina, Tylenol).
+- **cantidad**: presentación o cantidad recetada (ej. 1 caja, 2 frascos).
+- **tiempo**: duración del tratamiento (ej. 15 días, 1 mes).
+- **descripcion_dosis**: instrucciones de uso (ej. Tomar 1 pastilla cada 8 horas).
+
+Detalle importante:
+- Una cita puede tener **uno o más** medicamentos, lo que modela una relación **uno a muchos** entre `citas` y `medicamentos`.
+
+---
+
+### 5. Tabla `horario_medico`
 La tabla **horario_medico** almacena la disponibilidad de cada médico.  
 Permite definir los días y el rango horario en que un médico atiende.
 
@@ -164,14 +197,20 @@ Detalle importante:
 - Tipo: **uno a uno**
 - Explicación: cada médico tiene un único horario registrado, y cada horario pertenece a un solo médico.
 
+### Relación entre `citas` y `medicamentos`
+- Tipo: **uno a muchos**
+- Explicación: una cita atendida puede tener uno o más medicamentos recetados. Cada medicamento pertenece a una sola cita. Si la cita se elimina, sus medicamentos se eliminan en cascada.
+
 ---
 
 ## Resumen del modelo ER
 El modelo está diseñado para gestionar un sistema de citas médicas de forma estructurada.  
 Las entidades principales son pacientes y médicos, mientras que la tabla de citas funciona como entidad intermedia para conectar a ambos.  
-Además, la tabla de horario médico complementa la información del profesional, permitiendo definir su disponibilidad de atención.
+Además, la tabla de horario médico complementa la información del profesional, permitiendo definir su disponibilidad de atención.  
+A partir de la Fase 2 (HU-203), se incorpora la tabla de medicamentos para registrar el tratamiento estructurado al momento de atender una cita.
 
 Este diseño permite:
 - registrar pacientes y médicos,
 - programar citas entre ambos,
-- y controlar el horario disponible de cada médico.
+- controlar el horario disponible de cada médico,
+- y registrar diagnósticos y medicamentos estructurados por cita atendida.
