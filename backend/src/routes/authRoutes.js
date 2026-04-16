@@ -24,11 +24,25 @@ const {
 } = require("../controllers/authController");
 
 // Rutas para el paciente
-router.post("/paciente/registro", upload.single("foto"), registrarPaciente);
+router.post(
+  "/paciente/registro",
+  upload.fields([
+    { name: "foto", maxCount: 1 },
+    { name: "dpi_pdf", maxCount: 1 },
+  ]),
+  registrarPaciente,
+);
 router.post("/paciente/login", loginPaciente);
 // Rutas para el médico (HU-002)
 // Ruta para el registro médico con Multer (Foto obligatoria)
-router.post("/medico/registro", upload.single("foto"), registrarMedico);
+router.post(
+  "/medico/registro",
+  upload.fields([
+    { name: "foto", maxCount: 1 },
+    { name: "cv_pdf", maxCount: 1 },
+  ]),
+  registrarMedico,
+);
 router.post("/medico/login", loginMedico);
 // Rutas para el administrador (HU-004) - Autenticación de 2 factores
 router.post("/admin/login", loginAdmin); // Primer factor

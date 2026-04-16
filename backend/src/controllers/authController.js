@@ -22,7 +22,25 @@ const registrarPaciente = async (req, res) => {
   } = req.body;
 
   // 2. Extraer foto si viene (es opcional para pacientes)
-  const fotoPath = req.file ? req.file.path : null;
+  const foto = req.files["foto"] ? req.files["foto"][0] : null;
+  const pdfDpi = req.files["dpi_pdf"] ? req.files["dpi_pdf"][0] : null;
+
+  const fotoPath = foto ? foto.path : null;
+  const pdfPath = pdfDpi ? pdfDpi.path : null;
+
+  // Validaciones obligatorias
+  if (!foto) {
+    return res.status(400).json({ error: "La fotografía es obligatoria" });
+  }
+
+  if (!pdfDpi) {
+    return res.status(400).json({ error: "El DPI en PDF es obligatorio" });
+  }
+
+  // Validar que el archivo sea PDF
+  if (pdfDpi.mimetype !== "application/pdf") {
+    return res.status(400).json({ error: "El DPI debe ser un archivo PDF" });
+  }
 
   try {
     // 3. Verificar si el paciente ya existe por correo o DPI
@@ -44,8 +62,8 @@ const registrarPaciente = async (req, res) => {
     const nuevoPaciente = await pool.query(
       `INSERT INTO pacientes (
         nombre, apellido, dpi, genero, direccion, telefono, 
-        fecha_nacimiento, foto, correo, password, rol, estado, token_verificacion
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) 
+        fecha_nacimiento, foto, dpi_pdf, correo, password, rol, estado, token_verificacion
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
       RETURNING id, nombre, correo, estado`,
       [
         nombre,
@@ -56,6 +74,7 @@ const registrarPaciente = async (req, res) => {
         telefono,
         fecha_nacimiento,
         fotoPath,
+        pdfPath,
         correo,
         passwordEncriptada,
         "paciente",
@@ -220,14 +239,25 @@ const registrarMedico = async (req, res) => {
     password,
   } = req.body;
 
+  // Extraer archivos de foto y cv.
+  const foto = req.files?.foto ? req.files.foto[0] : null;
+  const cvPdf = req.files?.cv_pdf ? req.files.cv_pdf[0] : null;
+
   // 2. Validar que la foto exista (Requisito Crítico)
-  if (!req.file) {
+  if (!foto) {
     return res.status(400).json({
       error: "La fotografía es obligatoria para el registro de médicos.",
     });
   }
 
-  const fotoPath = req.file.path; // Ruta donde multer guardó la imagen
+  if (!cvPdf) {
+    return res.status(400).json({
+      error: "El CV en formato PDF es obligatorio para el registro de médicos.",
+    });
+  }
+
+  const fotoPath = foto.path;
+  const cvPdfPath = cvPdf.path;
 
   try {
     // 3. Verificar si el médico ya existe (Correo, DPI o Número Colegiado)
@@ -251,8 +281,8 @@ const registrarMedico = async (req, res) => {
       `INSERT INTO medicos (
         nombre, apellido, dpi, fecha_nacimiento, genero, 
         direccion, telefono, foto, numero_colegiado, 
-        especialidad, direccion_clinica, correo, contrasena, estado, token_verificacion
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) 
+        especialidad, direccion_clinica, correo, contrasena, estado, token_verificacion, cv_pdf
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) 
       RETURNING id, nombre, correo, estado`,
       [
         nombre,
@@ -270,6 +300,7 @@ const registrarMedico = async (req, res) => {
         passwordEncriptada,
         "pendiente",
         tokenVerificacion,
+        cvPdfPath,
       ],
     );
 
