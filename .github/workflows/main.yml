@@ -1,0 +1,70 @@
+name: SaludPlus Backend CI/CD
+
+# TEMPORAL: Para pruebas, solo se ejecutará en la rama de la HU-211.
+# Antes de entregar el proyecto, cambiar a: branches: ["main"]
+on:
+  push:
+    branches: ["feature/HU-211_202010367"]
+
+jobs:
+  # ETAPA 1: BUILD
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código del repositorio
+        uses: actions/checkout@v3
+
+      #Creamos un .env temporal para que docker-compose no falle
+      - name: Crear archivo .env de entorno
+        run: |
+          echo "DB_USER=postgres" >> .env
+          echo "DB_PASSWORD=admin" >> .env
+          echo "DB_NAME=saludplus_db" >> .env
+          echo "EMAIL_USER=test@test.com" >> .env
+          echo "EMAIL_PASS=123456" >> .env
+
+      - name: Construir Imagen Docker del Backend
+        run: docker-compose build backend
+
+  # ETAPA 2: TEST
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código del repositorio
+        uses: actions/checkout@v3
+
+      - name: Crear archivo .env de entorno
+        run: |
+          echo "DB_USER=postgres" >> .env
+          echo "DB_PASSWORD=admin" >> .env
+          echo "DB_NAME=saludplus_db" >> .env
+          echo "EMAIL_USER=test@test.com" >> .env
+          echo "EMAIL_PASS=123456" >> .env
+
+      - name: Ejecutar Pruebas Unitarias
+        # Comentado temporalmente hasta que se agreguen las pruebas reales
+        # run: docker-compose run --rm backend npm test
+        run: echo " Pruebas omitidas temporalmente. Esperando a que el equipo agregue Jest/Mocha."
+
+  # ETAPA 3: DEPLOY (En el Runner de GitHub)
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código del repositorio
+        uses: actions/checkout@v3
+
+      - name: Crear archivo .env de entorno
+        run: |
+          echo "DB_USER=postgres" >> .env
+          echo "DB_PASSWORD=admin" >> .env
+          echo "DB_NAME=saludplus_db" >> .env
+          echo "EMAIL_USER=test@test.com" >> .env
+          echo "EMAIL_PASS=123456" >> .env
+
+      - name: Levantar Aplicación en el Runner
+        run: |
+          docker-compose up -d backend
+          echo " ¡Backend desplegado exitosamente en el Runner de GitHub!"
+          docker ps
