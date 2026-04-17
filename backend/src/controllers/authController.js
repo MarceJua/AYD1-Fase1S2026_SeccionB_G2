@@ -519,7 +519,7 @@ const validar2FA = async (req, res) => {
 const obtenerMedicosPendientes = async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, foto, nombre, apellido, dpi, genero, especialidad, numero_colegiado, correo, estado FROM medicos WHERE estado = 'pendiente'",
+      "SELECT id, foto, nombre, apellido, dpi, genero, especialidad, numero_colegiado, correo, estado, cv_pdf FROM medicos WHERE estado = 'pendiente'",
     );
     res.json(result.rows);
   } catch (error) {
@@ -532,7 +532,7 @@ const obtenerMedicosPendientes = async (req, res) => {
 const obtenerPacientesPendientes = async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, foto, nombre, apellido, dpi, genero, fecha_nacimiento, correo, estado FROM pacientes WHERE estado = 'pendiente'",
+      "SELECT id, foto, nombre, apellido, dpi, genero, fecha_nacimiento, correo, estado, dpi_pdf FROM pacientes WHERE estado = 'pendiente'",
     );
     res.json(result.rows);
   } catch (error) {
@@ -711,6 +711,104 @@ const reporteEspecialidades = async (req, res) => {
   }
 };
 
+// Modificación de usuarios para el Administrador
+
+// Pacientes
+const actualizarPacienteAdmin = async (req, res) => {
+  const { id } = req.params;
+
+  const {
+    nombre,
+    apellido,
+    dpi,
+    genero,
+    direccion,
+    telefono,
+    fecha_nacimiento,
+  } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE pacientes SET 
+        nombre = $1,
+        apellido = $2,
+        dpi = $3,
+        genero = $4,
+        direccion = $5,
+        telefono = $6,
+        fecha_nacimiento = $7
+       WHERE id = $8
+       RETURNING *`,
+      [
+        nombre,
+        apellido,
+        dpi,
+        genero,
+        direccion,
+        telefono,
+        fecha_nacimiento,
+        id,
+      ],
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ error: "Error al actualizar paciente" });
+  }
+};
+
+// Médicos
+const actualizarMedicoAdmin = async (req, res) => {
+  const { id } = req.params;
+
+  const {
+    nombre,
+    apellido,
+    dpi,
+    genero,
+    especialidad,
+    numero_colegiado,
+    direccion,
+    telefono,
+    direccion_clinica,
+  } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE medicos SET 
+        nombre = $1,
+        apellido = $2,
+        dpi = $3,
+        genero = $4,
+        especialidad = $5,
+        numero_colegiado = $6,
+        direccion = $7,
+        telefono = $8,
+        direccion_clinica = $9
+       WHERE id = $10
+       RETURNING *`,
+      [
+        nombre,
+        apellido,
+        dpi,
+        genero,
+        especialidad,
+        numero_colegiado,
+        direccion,
+        telefono,
+        direccion_clinica,
+        id,
+      ],
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ error: "Error al actualizar médico" });
+  }
+};
+
 module.exports = {
   registrarPaciente,
   loginPaciente,
@@ -730,4 +828,6 @@ module.exports = {
   darBajaPaciente,
   reporteMedicosMasAtendidos,
   reporteEspecialidades,
+  actualizarPacienteAdmin,
+  actualizarMedicoAdmin,
 };

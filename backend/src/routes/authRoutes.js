@@ -21,6 +21,8 @@ const {
   darBajaPaciente,
   reporteMedicosMasAtendidos,
   reporteEspecialidades,
+  actualizarPacienteAdmin,
+  actualizarMedicoAdmin,
 } = require("../controllers/authController");
 
 // Rutas para el paciente
@@ -62,5 +64,8 @@ router.get("/admin/medicos-aprobados", obtenerMedicosAprobados);
 router.get("/admin/pacientes-aprobados", obtenerPacientesAprobados);
 router.post("/admin/baja-medico/:id", darBajaMedico);
 router.post("/admin/baja-paciente/:id", darBajaPaciente);
+
+router.put("/admin/actualizar-paciente/:id", actualizarPacienteAdmin);
+router.put("/admin/actualizar-medico/:id", actualizarMedicoAdmin);
 
 module.exports = router;

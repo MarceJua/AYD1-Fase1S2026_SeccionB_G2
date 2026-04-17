@@ -16,6 +16,18 @@ const AdminDashboard = () => {
   const [reporteEspecialidades, setReporteEspecialidades] = useState([]);
   const navigate = useNavigate();
 
+  const [seleccionado, setSeleccionado] = useState(null);
+  const [tipoEdicion, setTipoEdicion] = useState(""); // "paciente" o "medico"
+
+  // Obtener PDFs.
+  const getPdfUrl = (rutaPdf) => {
+    if (!rutaPdf) return null;
+
+    const nombreArchivo = rutaPdf.split("\\").pop().split("/").pop();
+
+    return `http://localhost:5000/uploads/${nombreArchivo}`;
+  };
+
   // Declarar funciones ARRIBA del useEffect
   const fetchPendientes = async () => {
     try {
@@ -232,7 +244,35 @@ const AdminDashboard = () => {
 
     return `http://localhost:5000/uploads/${nombreArchivo}`;
   };
-  
+
+  // Guardar cambios de edición de usuarios
+  const guardarCambios = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const endpoint =
+        tipoEdicion === "paciente"
+          ? `http://localhost:5000/api/auth/admin/actualizar-paciente/${seleccionado.id}`
+          : `http://localhost:5000/api/auth/admin/actualizar-medico/${seleccionado.id}`;
+
+      const response = await fetch(endpoint, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(seleccionado),
+      });
+
+      if (response.ok) {
+        setMensaje("Datos actualizados correctamente");
+        setSeleccionado(null);
+        fetchPendientes();
+      }
+    } catch (error) {
+      console.error("Error al actualizar:", error);
+    }
+  };
 
   return (
     <div className="admin-container">
@@ -277,6 +317,7 @@ const AdminDashboard = () => {
               <th>Especialidad</th>
               <th>Correo</th>
               <th>Acciones</th>
+              <th>CV</th>
             </tr>
           </thead>
           <tbody>
@@ -313,6 +354,19 @@ const AdminDashboard = () => {
                     Rechazar
                   </button>
                 </td>
+                <td>
+                  {medico.cv_pdf ? (
+                    <iframe
+                      style={{ border: "1px solid #ccc", borderRadius: "5px" }}
+                      src={getPdfUrl(medico.cv_pdf)}
+                      width="150"
+                      height="200"
+                      title="CV"
+                    />
+                  ) : (
+                    <span>No disponible</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -332,6 +386,7 @@ const AdminDashboard = () => {
               <th>Género</th>
               <th>Correo</th>
               <th>Acciones</th>
+              <th>DPI PDF</th>
             </tr>
           </thead>
           <tbody>
@@ -369,10 +424,143 @@ const AdminDashboard = () => {
                     Rechazar
                   </button>
                 </td>
+                <td>
+                  {paciente.dpi_pdf ? (
+                    <iframe
+                      style={{ border: "1px solid #ccc", borderRadius: "5px" }}
+                      src={getPdfUrl(paciente.dpi_pdf)}
+                      width="150"
+                      height="200"
+                      title="DPI"
+                    />
+                  ) : (
+                    <span>No disponible</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
+      )}
+      {seleccionado && (
+        <div className="edit-panel">
+          <h3>✏️ Editando {tipoEdicion}</h3>
+
+          {/* COMUNES */}
+          <input
+            value={seleccionado.nombre || ""}
+            onChange={(e) =>
+              setSeleccionado({ ...seleccionado, nombre: e.target.value })
+            }
+            placeholder="Nombre"
+          />
+
+          <input
+            value={seleccionado.apellido || ""}
+            onChange={(e) =>
+              setSeleccionado({ ...seleccionado, apellido: e.target.value })
+            }
+            placeholder="Apellido"
+          />
+
+          <input
+            value={seleccionado.dpi || ""}
+            onChange={(e) =>
+              setSeleccionado({ ...seleccionado, dpi: e.target.value })
+            }
+            placeholder="DPI"
+          />
+
+          <input
+            value={seleccionado.telefono || ""}
+            onChange={(e) =>
+              setSeleccionado({ ...seleccionado, telefono: e.target.value })
+            }
+            placeholder="Teléfono"
+          />
+
+          <input
+            value={seleccionado.direccion || ""}
+            onChange={(e) =>
+              setSeleccionado({ ...seleccionado, direccion: e.target.value })
+            }
+            placeholder="Dirección"
+          />
+
+          {/* SELECT GENERO */}
+          <select
+            value={seleccionado.genero || ""}
+            onChange={(e) =>
+              setSeleccionado({ ...seleccionado, genero: e.target.value })
+            }
+          >
+            <option value="">Seleccione género</option>
+            <option value="Masculino">Masculino</option>
+            <option value="Femenino">Femenino</option>
+          </select>
+
+          {/* PACIENTE */}
+          {tipoEdicion === "paciente" && (
+            <>
+              <input
+                type="date"
+                value={seleccionado.fecha_nacimiento || ""}
+                onChange={(e) =>
+                  setSeleccionado({
+                    ...seleccionado,
+                    fecha_nacimiento: e.target.value,
+                  })
+                }
+              />
+            </>
+          )}
+
+          {/* MÉDICO */}
+          {tipoEdicion === "medico" && (
+            <>
+              <input
+                value={seleccionado.especialidad || ""}
+                onChange={(e) =>
+                  setSeleccionado({
+                    ...seleccionado,
+                    especialidad: e.target.value,
+                  })
+                }
+                placeholder="Especialidad"
+              />
+
+              <input
+                value={seleccionado.numero_colegiado || ""}
+                onChange={(e) =>
+                  setSeleccionado({
+                    ...seleccionado,
+                    numero_colegiado: e.target.value,
+                  })
+                }
+                placeholder="Número de colegiado"
+              />
+
+              <input
+                value={seleccionado.direccion_clinica || ""}
+                onChange={(e) =>
+                  setSeleccionado({
+                    ...seleccionado,
+                    direccion_clinica: e.target.value,
+                  })
+                }
+                placeholder="Dirección clínica"
+              />
+            </>
+          )}
+
+          {/* ❌ NO EDITAR */}
+          <input value={seleccionado.correo || ""} disabled />
+
+          <div style={{ marginTop: "10px" }}>
+            <button onClick={guardarCambios}>Guardar</button>
+            <button onClick={() => setSeleccionado(null)}>Cancelar</button>
+          </div>
+        </div>
       )}
       <hr style={{ margin: "40px 0", border: "1px solid #ccc" }} />
       <h2 style={{ color: "#0056b3" }}>🟢 Usuarios Activos en el Sistema</h2>
@@ -407,6 +595,15 @@ const AdminDashboard = () => {
                     onClick={() => handleDarDeBaja("medico", medico.id)}
                   >
                     Dar de Baja
+                  </button>
+                  <button
+                    className="btn-aprobar"
+                    onClick={() => {
+                      setSeleccionado(medico);
+                      setTipoEdicion("medico");
+                    }}
+                  >
+                    Editar
                   </button>
                 </td>
               </tr>
@@ -443,6 +640,15 @@ const AdminDashboard = () => {
                     onClick={() => handleDarDeBaja("paciente", paciente.id)}
                   >
                     Dar de Baja
+                  </button>
+                  <button
+                    className="btn-aprobar"
+                    onClick={() => {
+                      setSeleccionado(paciente);
+                      setTipoEdicion("paciente");
+                    }}
+                  >
+                    Editar
                   </button>
                 </td>
               </tr>
