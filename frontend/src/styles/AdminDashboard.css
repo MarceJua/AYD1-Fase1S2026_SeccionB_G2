@@ -27,10 +27,11 @@
   margin-bottom: 40px;
   background-color: #fff;
   color: #333;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.admin-table th, .admin-table td {
+.admin-table th,
+.admin-table td {
   padding: 12px;
   border-bottom: 1px solid #ddd;
   text-align: left;
@@ -67,8 +68,13 @@
   cursor: pointer;
 }
 
-.btn-aprobar:hover { background-color: #45a049; }
-.btn-rechazar:hover { background-color: #da190b; }
+.btn-aprobar:hover {
+  background-color: #45a049;
+}
+
+.btn-rechazar:hover {
+  background-color: #da190b;
+}
 
 /* Limita y organiza los contenedores de los reportes */
 .reportes-container {
@@ -107,4 +113,83 @@
 .reporte canvas {
   width: 100% !important;
   max-height: 300px !important;
+}
+
+/* CSS para la interfaz de edición de usuarios */
+
+.edit-panel {
+  background: #1e1e2f;
+  padding: 18px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  color: #ffffff;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.edit-panel h3 {
+  width: 100%;
+  margin-bottom: 10px;
+  font-size: 18px;
+  color: #ffffff;
+}
+
+.edit-panel input,
+.edit-panel select {
+  flex: 1 1 220px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #2a2a3d;
+  color: #fff;
+  outline: none;
+  transition: 0.2s;
+}
+
+.edit-panel input:focus,
+.edit-panel select:focus {
+  border-color: #4da3ff;
+  box-shadow: 0 0 0 2px rgba(77, 163, 255, 0.2);
+}
+
+.edit-panel input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.edit-panel div {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.edit-panel button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.2s;
+}
+
+.edit-panel button:first-child {
+  background: #28a745;
+  color: white;
+}
+
+.edit-panel button:first-child:hover {
+  background: #218838;
+}
+
+.edit-panel button:last-child {
+  background: #dc3545;
+  color: white;
+}
+
+.edit-panel button:last-child:hover {
+  background: #c82333;
 }

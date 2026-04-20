@@ -21,14 +21,30 @@ const {
   darBajaPaciente,
   reporteMedicosMasAtendidos,
   reporteEspecialidades,
+  actualizarPacienteAdmin,
+  actualizarMedicoAdmin,
 } = require("../controllers/authController");
 
 // Rutas para el paciente
-router.post("/paciente/registro", upload.single("foto"), registrarPaciente);
+router.post(
+  "/paciente/registro",
+  upload.fields([
+    { name: "foto", maxCount: 1 },
+    { name: "dpi_pdf", maxCount: 1 },
+  ]),
+  registrarPaciente,
+);
 router.post("/paciente/login", loginPaciente);
 // Rutas para el médico (HU-002)
 // Ruta para el registro médico con Multer (Foto obligatoria)
-router.post("/medico/registro", upload.single("foto"), registrarMedico);
+router.post(
+  "/medico/registro",
+  upload.fields([
+    { name: "foto", maxCount: 1 },
+    { name: "cv_pdf", maxCount: 1 },
+  ]),
+  registrarMedico,
+);
 router.post("/medico/login", loginMedico);
 // Rutas para el administrador (HU-004) - Autenticación de 2 factores
 router.post("/admin/login", loginAdmin); // Primer factor
@@ -48,5 +64,8 @@ router.get("/admin/medicos-aprobados", obtenerMedicosAprobados);
 router.get("/admin/pacientes-aprobados", obtenerPacientesAprobados);
 router.post("/admin/baja-medico/:id", darBajaMedico);
 router.post("/admin/baja-paciente/:id", darBajaPaciente);
+
+router.put("/admin/actualizar-paciente/:id", actualizarPacienteAdmin);
+router.put("/admin/actualizar-medico/:id", actualizarMedicoAdmin);
 
 module.exports = router;

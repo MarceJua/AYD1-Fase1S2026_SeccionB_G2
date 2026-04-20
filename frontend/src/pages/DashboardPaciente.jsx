@@ -20,6 +20,80 @@ const DashboardPaciente = () => {
   const [historialCitas, setHistorialCitas] = useState([]);
   const [cargandoCitas, setCargandoCitas] = useState(false);
 
+  // ESTADOS PARA HU-205 (Calificar Médico)
+  const [modalCalificarVisible, setModalCalificarVisible] = useState(false);
+  const [citaACalificar, setCitaACalificar] = useState(null);
+  const [estrellas, setEstrellas] = useState(5);
+  const [comentario, setComentario] = useState("");
+  const [calificacionMensaje, setCalificacionMensaje] = useState({ texto: "", tipo: "" });
+
+  // ESTADOS PARA HU-206 (Reportar Médico)
+  const [modalReportarVisible, setModalReportarVisible] = useState(false);
+  const [citaAReportar, setCitaAReportar] = useState(null);
+  const [categoriaReporte, setCategoriaReporte] = useState("");
+  const [explicacionReporte, setExplicacionReporte] = useState("");
+  const [reporteMensaje, setReporteMensaje] = useState({ texto: "", tipo: "" });
+
+  const abrirModalReportar = (cita) => {
+    setCitaAReportar(cita);
+    setCategoriaReporte("");
+    setExplicacionReporte("");
+    setReporteMensaje({ texto: "", tipo: "" });
+    setModalReportarVisible(true);
+  };
+
+  const handleReportarMedico = async (e) => {
+    e.preventDefault();
+    setReporteMensaje({ texto: "", tipo: "" });
+    try {
+      await axios.post(`${apiUrl}/paciente/reportar-medico`, {
+        cita_id: citaAReportar.id,
+        categoria: categoriaReporte,
+        explicacion: explicacionReporte,
+      });
+      setReporteMensaje({ texto: "¡Reporte enviado exitosamente al administrador!", tipo: "success" });
+      setTimeout(() => {
+        setModalReportarVisible(false);
+        setCitaAReportar(null);
+      }, 2000);
+    } catch (error) {
+      setReporteMensaje({
+        texto: error.response?.data?.error || "Error al reportar al médico",
+        tipo: "error",
+      });
+    }
+  };
+
+  const abrirModalCalificar = (cita) => {
+    setCitaACalificar(cita);
+    setEstrellas(5);
+    setComentario("");
+    setCalificacionMensaje({ texto: "", tipo: "" });
+    setModalCalificarVisible(true);
+  };
+
+  const handleCalificarMedico = async (e) => {
+    e.preventDefault();
+    setCalificacionMensaje({ texto: "", tipo: "" });
+    try {
+      await axios.post(`${apiUrl}/paciente/calificar-medico`, {
+        cita_id: citaACalificar.id,
+        estrellas: estrellas,
+        comentario: comentario,
+      });
+      setCalificacionMensaje({ texto: "¡Médico calificado exitosamente!", tipo: "success" });
+      setTimeout(() => {
+        setModalCalificarVisible(false);
+        setCitaACalificar(null);
+      }, 2000);
+    } catch (error) {
+      setCalificacionMensaje({
+        texto: error.response?.data?.error || "Error al calificar al médico",
+        tipo: "error",
+      });
+    }
+  };
+
   const navigate = useNavigate();
   const usuario = JSON.parse(localStorage.getItem("usuario"));
   const apiUrl = import.meta.env.VITE_API_URL;
@@ -42,6 +116,84 @@ const DashboardPaciente = () => {
   };
 
   const formatearHora = (horaStr) => (horaStr ? horaStr.slice(0, 5) : "");
+
+  const imprimirReceta = (cita) => {
+    const ventana = window.open("", "_blank");
+    const fechaEmision = new Date().toLocaleDateString("es-ES");
+    const medicamentosHTML =
+      Array.isArray(cita.medicamentos) && cita.medicamentos.length > 0
+        ? cita.medicamentos
+            .map(
+              (m) => `<tr>
+                <td>${m.nombre}</td>
+                <td>${m.cantidad}</td>
+                <td>${m.tiempo}</td>
+                <td>${m.descripcion_dosis}</td>
+              </tr>`,
+            )
+            .join("")
+        : '<tr><td colspan="4" style="text-align:center;color:#888;">Sin medicamentos registrados</td></tr>';
+
+    ventana.document.write(`<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Receta Médica - SaludPlus</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
+    .header { text-align: center; border-bottom: 3px solid #0056b3; padding-bottom: 20px; margin-bottom: 30px; }
+    .header h1 { color: #0056b3; margin: 0 0 5px; font-size: 30px; }
+    .header p { margin: 4px 0; color: #555; font-size: 14px; }
+    .section { margin-bottom: 25px; }
+    .section h3 { color: #0056b3; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 12px; }
+    .section p { margin: 5px 0; font-size: 14px; }
+    .diagnostico-box { background: #f0f7ff; border-left: 4px solid #0056b3; padding: 12px 16px; border-radius: 4px; font-size: 15px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th { background-color: #0056b3; color: white; padding: 10px 12px; text-align: left; font-size: 13px; }
+    td { padding: 9px 12px; border-bottom: 1px solid #eee; font-size: 13px; }
+    tr:nth-child(even) td { background-color: #f8f9fa; }
+    .footer { margin-top: 60px; text-align: right; border-top: 2px solid #ccc; padding-top: 16px; }
+    .footer p { margin: 3px 0; font-size: 14px; }
+    @media print { body { margin: 20px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Clínica SaludPlus</h1>
+    <p>Fecha de emisión: ${fechaEmision}</p>
+    <p>Teléfono de contacto: ${cita.medico_telefono || "N/A"}</p>
+  </div>
+  <div class="section">
+    <h3>Información del Médico</h3>
+    <p><strong>Médico:</strong> Dr/Dra. ${cita.medico_nombre} ${cita.medico_apellido}</p>
+    <p><strong>Especialidad:</strong> ${cita.especialidad}</p>
+    <p><strong>N° Colegiado:</strong> ${cita.numero_colegiado || "N/A"}</p>
+  </div>
+  <div class="section">
+    <h3>Diagnóstico</h3>
+    <div class="diagnostico-box">${cita.diagnostico || "Sin diagnóstico registrado"}</div>
+  </div>
+  <div class="section">
+    <h3>Medicamentos Recetados</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Medicamento</th><th>Cantidad</th><th>Tiempo</th><th>Descripción de la Dosis</th>
+        </tr>
+      </thead>
+      <tbody>${medicamentosHTML}</tbody>
+    </table>
+  </div>
+  <div class="footer">
+    <p><strong>Dr/Dra. ${cita.medico_nombre} ${cita.medico_apellido}</strong></p>
+    <p>${cita.especialidad}</p>
+    <p>Colegiado N°: ${cita.numero_colegiado || "N/A"}</p>
+  </div>
+  <script>window.onload = function() { window.print(); }<\/script>
+</body>
+</html>`);
+    ventana.document.close();
+  };
 
   const construirFotoMedico = (foto) => {
     if (!foto) return null;
@@ -412,19 +564,114 @@ const DashboardPaciente = () => {
                   </div>
 
                   {cita.estado_mostrable === "Atendido" && (
-                    <div
-                      className="cita-fila cita-fila-motivo"
-                      style={{
-                        marginTop: "10px",
-                        padding: "10px",
-                        backgroundColor: "#f8f9fa",
-                        borderRadius: "5px",
-                      }}
-                    >
-                      <span className="cita-etiqueta">Tratamiento:</span>
-                      <span className="cita-valor">
-                        {cita.tratamiento || "Sin tratamiento registrado."}
-                      </span>
+                    <div style={{ marginTop: "10px" }}>
+                      {/* Diagnóstico */}
+                      <div
+                        style={{
+                          padding: "10px",
+                          backgroundColor: "#d4edda",
+                          borderRadius: "5px",
+                          fontSize: "14px",
+                          color: "#155724",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        <strong>Diagnóstico:</strong>{" "}
+                        {cita.diagnostico || cita.tratamiento || "Sin diagnóstico registrado."}
+                      </div>
+
+                      {/* Tabla de medicamentos */}
+                      {Array.isArray(cita.medicamentos) && cita.medicamentos.length > 0 && (
+                        <div
+                          style={{
+                            padding: "10px",
+                            backgroundColor: "#e8f4fd",
+                            borderRadius: "5px",
+                            fontSize: "13px",
+                            color: "#0c5460",
+                            marginBottom: "8px",
+                            overflowX: "auto",
+                          }}
+                        >
+                          <strong>Medicamentos recetados:</strong>
+                          <table style={{ width: "100%", marginTop: "8px", borderCollapse: "collapse" }}>
+                            <thead>
+                              <tr style={{ backgroundColor: "#0056b3", color: "white" }}>
+                                <th style={{ padding: "6px 8px", textAlign: "left", fontSize: "12px" }}>Medicamento</th>
+                                <th style={{ padding: "6px 8px", textAlign: "left", fontSize: "12px" }}>Cantidad</th>
+                                <th style={{ padding: "6px 8px", textAlign: "left", fontSize: "12px" }}>Tiempo</th>
+                                <th style={{ padding: "6px 8px", textAlign: "left", fontSize: "12px" }}>Dosis</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {cita.medicamentos.map((med, i) => (
+                                <tr key={i} style={{ backgroundColor: i % 2 === 0 ? "#f8f9fa" : "white" }}>
+                                  <td style={{ padding: "5px 8px", fontSize: "12px" }}>{med.nombre}</td>
+                                  <td style={{ padding: "5px 8px", fontSize: "12px" }}>{med.cantidad}</td>
+                                  <td style={{ padding: "5px 8px", fontSize: "12px" }}>{med.tiempo}</td>
+                                  <td style={{ padding: "5px 8px", fontSize: "12px" }}>{med.descripcion_dosis}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      {/* Botón imprimir receta */}
+                      <button
+                        onClick={() => imprimirReceta(cita)}
+                        style={{
+                          width: "100%",
+                          padding: "9px",
+                          backgroundColor: "#0056b3",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "5px",
+                          cursor: "pointer",
+                          fontWeight: "bold",
+                          fontSize: "13px",
+                        }}
+                      >
+                        Imprimir Receta Médica
+                      </button>
+
+                      {/* NUEVO BOTÓN: Calificar Médico (HU-205) */}
+                      <button
+                        onClick={() => abrirModalCalificar(cita)}
+                        style={{
+                          width: "100%",
+                          padding: "9px",
+                          backgroundColor: "#ffc107",
+                          color: "#000",
+                          border: "none",
+                          borderRadius: "5px",
+                          cursor: "pointer",
+                          fontWeight: "bold",
+                          fontSize: "13px",
+                          marginTop: "10px",
+                        }}
+                      >
+                        Calificar Atención Médica
+                      </button>
+
+                      {/* NUEVO BOTÓN: Reportar Médico (HU-206) */}
+                      <button
+                        onClick={() => abrirModalReportar(cita)}
+                        style={{
+                          width: "100%",
+                          padding: "9px",
+                          backgroundColor: "#dc3545",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "5px",
+                          cursor: "pointer",
+                          fontWeight: "bold",
+                          fontSize: "13px",
+                          marginTop: "10px",
+                        }}
+                      >
+                        Reportar Médico
+                      </button>
                     </div>
                   )}
                 </div>
@@ -545,6 +792,89 @@ const DashboardPaciente = () => {
                   className="btn-cancelar"
                 >
                   Cerrar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* MODAL PARA CALIFICAR MEDICO (HU-205) */}
+      {modalCalificarVisible && citaACalificar && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Calificar a Dr. {citaACalificar.medico_nombre}</h2>
+            {calificacionMensaje.texto && (
+              <div className={`alert ${calificacionMensaje.tipo}`}>{calificacionMensaje.texto}</div>
+            )}
+            <form onSubmit={handleCalificarMedico}>
+              <label>Estrellas (0 a 5):</label>
+              <input
+                type="number"
+                min="0"
+                max="5"
+                value={estrellas}
+                onChange={(e) => setEstrellas(Number(e.target.value))}
+                required
+                style={{ width: "100%", padding: "10px", marginBottom: "15px", borderRadius: "5px", border: "1px solid #ccc" }}
+              />
+              <label>Comentario (Opcional):</label>
+              <textarea
+                value={comentario}
+                onChange={(e) => setComentario(e.target.value)}
+                placeholder="¿Qué tal te pareció la atención?"
+                style={{ width: "100%", padding: "10px", marginBottom: "15px", height: "80px", borderRadius: "5px", border: "1px solid #ccc" }}
+              />
+              <div className="modal-buttons">
+                <button type="submit" className="btn-confirmar" style={{ backgroundColor: "#ffc107", color: "#000" }}>
+                  Enviar Calificación
+                </button>
+                <button type="button" onClick={() => setModalCalificarVisible(false)} className="btn-cancelar">
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PARA REPORTAR MEDICO (HU-206) */}
+      {modalReportarVisible && citaAReportar && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Reportar a Dr. {citaAReportar.medico_nombre}</h2>
+            {reporteMensaje.texto && (
+              <div className={`alert ${reporteMensaje.tipo}`}>{reporteMensaje.texto}</div>
+            )}
+            <form onSubmit={handleReportarMedico}>
+              <label>Categoría del Reporte:</label>
+              <select
+                value={categoriaReporte}
+                onChange={(e) => setCategoriaReporte(e.target.value)}
+                required
+                style={{ width: "100%", padding: "10px", marginBottom: "15px", borderRadius: "5px", border: "1px solid #ccc" }}
+              >
+                <option value="" disabled>Seleccione una categoría...</option>
+                <option value="Ética y profesionalismo">Ética y profesionalismo</option>
+                <option value="Negligencia médica">Negligencia médica</option>
+                <option value="Abuso y conducta inapropiada">Abuso y conducta inapropiada</option>
+                <option value="Falsificación de información">Falsificación de información</option>
+                <option value="Otro">Otro</option>
+              </select>
+              
+              <label>Explicación del Motivo:</label>
+              <textarea
+                value={explicacionReporte}
+                onChange={(e) => setExplicacionReporte(e.target.value)}
+                placeholder="Describa detalladamente lo sucedido..."
+                required
+                style={{ width: "100%", padding: "10px", marginBottom: "15px", height: "80px", borderRadius: "5px", border: "1px solid #ccc" }}
+              />
+              <div className="modal-buttons">
+                <button type="submit" className="btn-confirmar" style={{ backgroundColor: "#dc3545" }}>
+                  Enviar Reporte
+                </button>
+                <button type="button" onClick={() => setModalReportarVisible(false)} className="btn-cancelar">
+                  Cancelar
                 </button>
               </div>
             </form>

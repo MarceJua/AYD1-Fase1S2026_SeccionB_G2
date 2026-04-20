@@ -617,3 +617,6 @@ Documentación subida al 100%.
 Participar en la Retro 2 y revisar que los links de los videos estén correctos.
 **¿Impedimentos?**
 Ninguno por el momento.
+
+
+
