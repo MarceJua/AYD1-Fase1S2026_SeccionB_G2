@@ -19,6 +19,7 @@ const {
   atenderPaciente,
   cancelarCita,
   obtenerHistorialCitas,
+  calificarPaciente,
 } = require("../controllers/citasMedicoController");
 
 // GET  /api/medico/citas/pendientes -> obtener citas pendientes del médico autenticado
@@ -52,5 +53,8 @@ router.put(
   upload.single("foto"),
   actualizarPerfilMedico,
 );
+
+// POST /api/medico/citas/calificar-paciente -> HU-205
+router.post("/citas/calificar-paciente", calificarPaciente);
 
 module.exports = router;

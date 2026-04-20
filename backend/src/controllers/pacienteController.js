@@ -75,4 +75,43 @@ const programarCita = async (req, res) => {
   }
 };
 
-module.exports = { programarCita };
+// HU-205: Paciente califica a Médico
+const calificarMedico = async (req, res) => {
+  const { cita_id, estrellas, comentario } = req.body;
+
+  if (estrellas < 0 || estrellas > 5) {
+    return res.status(400).json({ error: "Las estrellas deben estar entre 0 y 5." });
+  }
+
+  try {
+    const citaQuery = await pool.query(
+      "SELECT estado FROM citas WHERE id = $1",
+      [cita_id]
+    );
+
+    if (citaQuery.rows.length === 0) {
+      return res.status(404).json({ error: "Cita no encontrada." });
+    }
+
+    if (citaQuery.rows[0].estado.toLowerCase() !== "atendido") {
+      return res.status(400).json({ error: "Solo se pueden calificar citas con estado 'Atendido'." });
+    }
+
+    const insertQuery = `
+      INSERT INTO calificaciones (cita_id, evaluador_rol, estrellas, comentario)
+      VALUES ($1, 'paciente', $2, $3)
+      RETURNING *;
+    `;
+    const result = await pool.query(insertQuery, [cita_id, estrellas, comentario]);
+
+    res.status(201).json({ mensaje: "Médico calificado exitosamente.", calificacion: result.rows[0] });
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(400).json({ error: "Ya has calificado esta cita anteriormente." });
+    }
+    console.error("Error al calificar médico:", error);
+    res.status(500).json({ error: "Error interno al guardar la calificación." });
+  }
+};
+
+module.exports = { programarCita, calificarMedico };
