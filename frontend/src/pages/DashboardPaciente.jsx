@@ -20,6 +20,43 @@ const DashboardPaciente = () => {
   const [historialCitas, setHistorialCitas] = useState([]);
   const [cargandoCitas, setCargandoCitas] = useState(false);
 
+  // ESTADOS PARA HU-205 (Calificar Médico)
+  const [modalCalificarVisible, setModalCalificarVisible] = useState(false);
+  const [citaACalificar, setCitaACalificar] = useState(null);
+  const [estrellas, setEstrellas] = useState(5);
+  const [comentario, setComentario] = useState("");
+  const [calificacionMensaje, setCalificacionMensaje] = useState({ texto: "", tipo: "" });
+
+  const abrirModalCalificar = (cita) => {
+    setCitaACalificar(cita);
+    setEstrellas(5);
+    setComentario("");
+    setCalificacionMensaje({ texto: "", tipo: "" });
+    setModalCalificarVisible(true);
+  };
+
+  const handleCalificarMedico = async (e) => {
+    e.preventDefault();
+    setCalificacionMensaje({ texto: "", tipo: "" });
+    try {
+      await axios.post(`${apiUrl}/paciente/calificar-medico`, {
+        cita_id: citaACalificar.id,
+        estrellas: estrellas,
+        comentario: comentario,
+      });
+      setCalificacionMensaje({ texto: "¡Médico calificado exitosamente!", tipo: "success" });
+      setTimeout(() => {
+        setModalCalificarVisible(false);
+        setCitaACalificar(null);
+      }, 2000);
+    } catch (error) {
+      setCalificacionMensaje({
+        texto: error.response?.data?.error || "Error al calificar al médico",
+        tipo: "error",
+      });
+    }
+  };
+
   const navigate = useNavigate();
   const usuario = JSON.parse(localStorage.getItem("usuario"));
   const apiUrl = import.meta.env.VITE_API_URL;
@@ -560,6 +597,24 @@ const DashboardPaciente = () => {
                       >
                         Imprimir Receta Médica
                       </button>
+                      {/* NUEVO BOTÓN: Calificar Médico (HU-205) */}
+                      <button
+                        onClick={() => abrirModalCalificar(cita)}
+                        style={{
+                          width: "100%",
+                          padding: "9px",
+                          backgroundColor: "#ffc107",
+                          color: "#000",
+                          border: "none",
+                          borderRadius: "5px",
+                          cursor: "pointer",
+                          fontWeight: "bold",
+                          fontSize: "13px",
+                          marginTop: "10px",
+                        }}
+                      >
+                        Calificar Atención Médica
+                      </button>
                     </div>
                   )}
                 </div>
@@ -680,6 +735,44 @@ const DashboardPaciente = () => {
                   className="btn-cancelar"
                 >
                   Cerrar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* MODAL PARA CALIFICAR MEDICO (HU-205) */}
+      {modalCalificarVisible && citaACalificar && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Calificar a Dr. {citaACalificar.medico_nombre}</h2>
+            {calificacionMensaje.texto && (
+              <div className={`alert ${calificacionMensaje.tipo}`}>{calificacionMensaje.texto}</div>
+            )}
+            <form onSubmit={handleCalificarMedico}>
+              <label>Estrellas (0 a 5):</label>
+              <input
+                type="number"
+                min="0"
+                max="5"
+                value={estrellas}
+                onChange={(e) => setEstrellas(Number(e.target.value))}
+                required
+                style={{ width: "100%", padding: "10px", marginBottom: "15px", borderRadius: "5px", border: "1px solid #ccc" }}
+              />
+              <label>Comentario (Opcional):</label>
+              <textarea
+                value={comentario}
+                onChange={(e) => setComentario(e.target.value)}
+                placeholder="¿Qué tal te pareció la atención?"
+                style={{ width: "100%", padding: "10px", marginBottom: "15px", height: "80px", borderRadius: "5px", border: "1px solid #ccc" }}
+              />
+              <div className="modal-buttons">
+                <button type="submit" className="btn-confirmar" style={{ backgroundColor: "#ffc107", color: "#000" }}>
+                  Enviar Calificación
+                </button>
+                <button type="button" onClick={() => setModalCalificarVisible(false)} className="btn-cancelar">
+                  Cancelar
                 </button>
               </div>
             </form>

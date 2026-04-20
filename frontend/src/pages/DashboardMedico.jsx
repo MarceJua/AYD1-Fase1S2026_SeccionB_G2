@@ -16,6 +16,56 @@ const DashboardMedico = () => {
   const [diagnostico, setDiagnostico] = useState('');
   const [medicamentos, setMedicamentos] = useState([medicamentoVacio()]);
   const [mensajeExito, setMensajeExito] = useState('');
+  // ESTADOS PARA HU-205 (Calificar Paciente)
+  const [modalCalificarVisible, setModalCalificarVisible] = useState(false);
+  const [citaACalificar, setCitaACalificar] = useState(null);
+  const [estrellas, setEstrellas] = useState(5);
+  const [comentario, setComentario] = useState("");
+
+  const abrirModalCalificar = (cita) => {
+    setCitaACalificar(cita);
+    setEstrellas(5);
+    setComentario("");
+    setError("");
+    setMensajeExito("");
+    setModalCalificarVisible(true);
+  };
+
+  const handleCalificarPaciente = async (e) => {
+    e.preventDefault();
+    setError("");
+    setMensajeExito("");
+
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`${API}/medico/citas/calificar-paciente`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          cita_id: citaACalificar.cita_id,
+          estrellas: estrellas,
+          comentario: comentario,
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setMensajeExito(data.mensaje);
+        setTimeout(() => {
+          setModalCalificarVisible(false);
+          setCitaACalificar(null);
+          setMensajeExito("");
+        }, 2000);
+      } else {
+        setError(data.error);
+      }
+    } catch {
+      setError("Error de conexión al calificar al paciente.");
+    }
+  };
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -289,6 +339,7 @@ const handleCancelarCita = async (cita) => {
                       <th style={styles.th}>Hora</th>
                       <th style={styles.th}>Paciente</th>
                       <th style={styles.th}>Estado</th>
+                      <th style={styles.th}>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -308,6 +359,17 @@ const handleCancelarCita = async (cita) => {
                           >
                             {cita.estado}
                           </span>
+                        </td>
+                        {/* TD PARA HU-205 */}
+                        <td style={styles.td}>
+                          {cita.estado?.toLowerCase().includes("atendido") && (
+                            <button
+                              style={{...styles.btnSecundario, color: "#eab308", borderColor: "#eab308"}}
+                              onClick={() => abrirModalCalificar(cita)}
+                            >
+                              Calificar
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -434,6 +496,49 @@ const handleCancelarCita = async (cita) => {
                   <span>{mensajeExito}</span>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+        {/* Modal para Calificar Paciente (HU-205) */}
+        {modalCalificarVisible && citaACalificar && (
+          <div style={styles.modalOverlay} onClick={() => setModalCalificarVisible(false)}>
+            <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+              <h2 style={styles.modalTitulo}>Calificar Paciente: {citaACalificar.paciente_nombre}</h2>
+              {error && <div style={styles.alertError}>{error}</div>}
+              {mensajeExito && <div style={styles.alertExitoModal}><span>✅</span><span>{mensajeExito}</span></div>}
+              
+              <form onSubmit={handleCalificarPaciente}>
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>Estrellas (0 a 5) <span style={{ color: '#f87171' }}>*</span></label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="5"
+                    style={styles.inputField}
+                    value={estrellas}
+                    onChange={(e) => setEstrellas(Number(e.target.value))}
+                    required
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>Comentario (Opcional)</label>
+                  <textarea
+                    style={styles.textarea}
+                    value={comentario}
+                    onChange={(e) => setComentario(e.target.value)}
+                    placeholder="Ej: El paciente fue puntual y siguió las instrucciones."
+                    rows="3"
+                  />
+                </div>
+                <div style={styles.modalAcciones}>
+                  <button type="button" style={styles.btnModalCancelar} onClick={() => setModalCalificarVisible(false)}>
+                    Cancelar
+                  </button>
+                  <button type="submit" style={{...styles.btnModalGuardar, background: "linear-gradient(135deg, #eab308, #ca8a04)"}}>
+                    Enviar Calificación
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
