@@ -21,6 +21,56 @@ const DashboardMedico = () => {
   const [citaACalificar, setCitaACalificar] = useState(null);
   const [estrellas, setEstrellas] = useState(5);
   const [comentario, setComentario] = useState("");
+  // ESTADOS PARA HU-206 (Reportar Paciente)
+  const [modalReportarVisible, setModalReportarVisible] = useState(false);
+  const [citaAReportar, setCitaAReportar] = useState(null);
+  const [categoriaReporte, setCategoriaReporte] = useState("");
+  const [explicacionReporte, setExplicacionReporte] = useState("");
+
+  const abrirModalReportar = (cita) => {
+    setCitaAReportar(cita);
+    setCategoriaReporte("");
+    setExplicacionReporte("");
+    setError("");
+    setMensajeExito("");
+    setModalReportarVisible(true);
+  };
+
+  const handleReportarPaciente = async (e) => {
+    e.preventDefault();
+    setError("");
+    setMensajeExito("");
+
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`${API}/medico/citas/reportar-paciente`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          cita_id: citaAReportar.cita_id,
+          categoria: categoriaReporte,
+          explicacion: explicacionReporte,
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setMensajeExito(data.mensaje);
+        setTimeout(() => {
+          setModalReportarVisible(false);
+          setCitaAReportar(null);
+          setMensajeExito("");
+        }, 2000);
+      } else {
+        setError(data.error);
+      }
+    } catch {
+      setError("Error de conexión al reportar al paciente.");
+    }
+  };
 
   const abrirModalCalificar = (cita) => {
     setCitaACalificar(cita);
@@ -363,12 +413,20 @@ const handleCancelarCita = async (cita) => {
                         {/* TD PARA HU-205 */}
                         <td style={styles.td}>
                           {cita.estado?.toLowerCase().includes("atendido") && (
-                            <button
-                              style={{...styles.btnSecundario, color: "#eab308", borderColor: "#eab308"}}
-                              onClick={() => abrirModalCalificar(cita)}
-                            >
-                              Calificar
-                            </button>
+                            <div style={{ display: "flex", gap: "8px" }}>
+                              <button
+                                style={{...styles.btnSecundario, color: "#eab308", borderColor: "#eab308"}}
+                                onClick={() => abrirModalCalificar(cita)}
+                              >
+                                Calificar
+                              </button>
+                              <button
+                                style={{...styles.btnSecundario, color: "#ef4444", borderColor: "#ef4444"}}
+                                onClick={() => abrirModalReportar(cita)}
+                              >
+                                Reportar
+                              </button>
+                            </div>
                           )}
                         </td>
                       </tr>
@@ -536,6 +594,55 @@ const handleCancelarCita = async (cita) => {
                   </button>
                   <button type="submit" style={{...styles.btnModalGuardar, background: "linear-gradient(135deg, #eab308, #ca8a04)"}}>
                     Enviar Calificación
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal para Reportar Paciente (HU-206) */}
+        {modalReportarVisible && citaAReportar && (
+          <div style={styles.modalOverlay} onClick={() => setModalReportarVisible(false)}>
+            <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+              <h2 style={styles.modalTitulo}>Reportar Paciente: {citaAReportar.paciente_nombre}</h2>
+              {error && <div style={styles.alertError}>{error}</div>}
+              {mensajeExito && <div style={styles.alertExitoModal}><span>✅</span><span>{mensajeExito}</span></div>}
+              
+              <form onSubmit={handleReportarPaciente}>
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>Categoría del Reporte <span style={{ color: '#f87171' }}>*</span></label>
+                  <select
+                    style={styles.inputField}
+                    value={categoriaReporte}
+                    onChange={(e) => setCategoriaReporte(e.target.value)}
+                    required
+                  >
+                    <option value="" disabled>Seleccione una categoría...</option>
+                    <option value="Conducta inapropiada">Conducta inapropiada</option>
+                    <option value="Falsificación de documentos">Falsificación de documentos</option>
+                    <option value="Agresión verbal o física">Agresión verbal o física</option>
+                    <option value="Robo o daño a las instalaciones">Robo o daño a las instalaciones</option>
+                    <option value="Otro">Otro</option>
+                  </select>
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>Explicación del Motivo <span style={{ color: '#f87171' }}>*</span></label>
+                  <textarea
+                    style={styles.textarea}
+                    value={explicacionReporte}
+                    onChange={(e) => setExplicacionReporte(e.target.value)}
+                    placeholder="Describa detalladamente el incidente..."
+                    required
+                    rows="4"
+                  />
+                </div>
+                <div style={styles.modalAcciones}>
+                  <button type="button" style={styles.btnModalCancelar} onClick={() => setModalReportarVisible(false)}>
+                    Cancelar
+                  </button>
+                  <button type="submit" style={{...styles.btnModalGuardar, background: "linear-gradient(135deg, #ef4444, #b91c1c)"}}>
+                    Enviar Reporte
                   </button>
                 </div>
               </form>

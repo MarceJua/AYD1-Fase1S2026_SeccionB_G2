@@ -27,6 +27,43 @@ const DashboardPaciente = () => {
   const [comentario, setComentario] = useState("");
   const [calificacionMensaje, setCalificacionMensaje] = useState({ texto: "", tipo: "" });
 
+  // ESTADOS PARA HU-206 (Reportar Médico)
+  const [modalReportarVisible, setModalReportarVisible] = useState(false);
+  const [citaAReportar, setCitaAReportar] = useState(null);
+  const [categoriaReporte, setCategoriaReporte] = useState("");
+  const [explicacionReporte, setExplicacionReporte] = useState("");
+  const [reporteMensaje, setReporteMensaje] = useState({ texto: "", tipo: "" });
+
+  const abrirModalReportar = (cita) => {
+    setCitaAReportar(cita);
+    setCategoriaReporte("");
+    setExplicacionReporte("");
+    setReporteMensaje({ texto: "", tipo: "" });
+    setModalReportarVisible(true);
+  };
+
+  const handleReportarMedico = async (e) => {
+    e.preventDefault();
+    setReporteMensaje({ texto: "", tipo: "" });
+    try {
+      await axios.post(`${apiUrl}/paciente/reportar-medico`, {
+        cita_id: citaAReportar.id,
+        categoria: categoriaReporte,
+        explicacion: explicacionReporte,
+      });
+      setReporteMensaje({ texto: "¡Reporte enviado exitosamente al administrador!", tipo: "success" });
+      setTimeout(() => {
+        setModalReportarVisible(false);
+        setCitaAReportar(null);
+      }, 2000);
+    } catch (error) {
+      setReporteMensaje({
+        texto: error.response?.data?.error || "Error al reportar al médico",
+        tipo: "error",
+      });
+    }
+  };
+
   const abrirModalCalificar = (cita) => {
     setCitaACalificar(cita);
     setEstrellas(5);
@@ -597,6 +634,7 @@ const DashboardPaciente = () => {
                       >
                         Imprimir Receta Médica
                       </button>
+
                       {/* NUEVO BOTÓN: Calificar Médico (HU-205) */}
                       <button
                         onClick={() => abrirModalCalificar(cita)}
@@ -614,6 +652,25 @@ const DashboardPaciente = () => {
                         }}
                       >
                         Calificar Atención Médica
+                      </button>
+
+                      {/* NUEVO BOTÓN: Reportar Médico (HU-206) */}
+                      <button
+                        onClick={() => abrirModalReportar(cita)}
+                        style={{
+                          width: "100%",
+                          padding: "9px",
+                          backgroundColor: "#dc3545",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "5px",
+                          cursor: "pointer",
+                          fontWeight: "bold",
+                          fontSize: "13px",
+                          marginTop: "10px",
+                        }}
+                      >
+                        Reportar Médico
                       </button>
                     </div>
                   )}
@@ -772,6 +829,51 @@ const DashboardPaciente = () => {
                   Enviar Calificación
                 </button>
                 <button type="button" onClick={() => setModalCalificarVisible(false)} className="btn-cancelar">
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PARA REPORTAR MEDICO (HU-206) */}
+      {modalReportarVisible && citaAReportar && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Reportar a Dr. {citaAReportar.medico_nombre}</h2>
+            {reporteMensaje.texto && (
+              <div className={`alert ${reporteMensaje.tipo}`}>{reporteMensaje.texto}</div>
+            )}
+            <form onSubmit={handleReportarMedico}>
+              <label>Categoría del Reporte:</label>
+              <select
+                value={categoriaReporte}
+                onChange={(e) => setCategoriaReporte(e.target.value)}
+                required
+                style={{ width: "100%", padding: "10px", marginBottom: "15px", borderRadius: "5px", border: "1px solid #ccc" }}
+              >
+                <option value="" disabled>Seleccione una categoría...</option>
+                <option value="Ética y profesionalismo">Ética y profesionalismo</option>
+                <option value="Negligencia médica">Negligencia médica</option>
+                <option value="Abuso y conducta inapropiada">Abuso y conducta inapropiada</option>
+                <option value="Falsificación de información">Falsificación de información</option>
+                <option value="Otro">Otro</option>
+              </select>
+              
+              <label>Explicación del Motivo:</label>
+              <textarea
+                value={explicacionReporte}
+                onChange={(e) => setExplicacionReporte(e.target.value)}
+                placeholder="Describa detalladamente lo sucedido..."
+                required
+                style={{ width: "100%", padding: "10px", marginBottom: "15px", height: "80px", borderRadius: "5px", border: "1px solid #ccc" }}
+              />
+              <div className="modal-buttons">
+                <button type="submit" className="btn-confirmar" style={{ backgroundColor: "#dc3545" }}>
+                  Enviar Reporte
+                </button>
+                <button type="button" onClick={() => setModalReportarVisible(false)} className="btn-cancelar">
                   Cancelar
                 </button>
               </div>
