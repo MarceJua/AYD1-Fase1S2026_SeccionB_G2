@@ -114,4 +114,43 @@ const calificarMedico = async (req, res) => {
   }
 };
 
-module.exports = { programarCita, calificarMedico };
+// HU-206: Paciente reporta a Médico
+const reportarMedico = async (req, res) => {
+  const { cita_id, categoria, explicacion } = req.body;
+
+  if (!categoria || !explicacion) {
+    return res.status(400).json({ error: "La categoría y la explicación son obligatorias." });
+  }
+
+  try {
+    const citaQuery = await pool.query(
+      "SELECT estado FROM citas WHERE id = $1",
+      [cita_id]
+    );
+
+    if (citaQuery.rows.length === 0) {
+      return res.status(404).json({ error: "Cita no encontrada." });
+    }
+
+    if (citaQuery.rows[0].estado.toLowerCase() !== "atendido") {
+      return res.status(400).json({ error: "Solo se pueden reportar citas con estado 'Atendido'." });
+    }
+
+    const insertQuery = `
+      INSERT INTO reportes (cita_id, reportador_rol, categoria, explicacion)
+      VALUES ($1, 'paciente', $2, $3)
+      RETURNING *;
+    `;
+    const result = await pool.query(insertQuery, [cita_id, categoria, explicacion]);
+
+    res.status(201).json({ mensaje: "Reporte enviado exitosamente al administrador.", reporte: result.rows[0] });
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(400).json({ error: "Ya has reportado esta cita anteriormente." });
+    }
+    console.error("Error al reportar médico:", error);
+    res.status(500).json({ error: "Error interno al guardar el reporte." });
+  }
+};
+
+module.exports = { programarCita, calificarMedico, reportarMedico };

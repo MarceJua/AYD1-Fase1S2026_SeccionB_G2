@@ -2,7 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../config/db"); // Tu conexión a la BD
-const { programarCita, calificarMedico } = require("../controllers/pacienteController");
+const { programarCita, calificarMedico, reportarMedico } = require("../controllers/pacienteController");
 
 // Ruta para programar cita (HU-008)
 router.post("/programar-cita", programarCita);
@@ -285,5 +285,8 @@ router.get("/historial-citas/:paciente_id", async (req, res) => {
     res.status(500).json({ error: "Error al cargar el historial médico." });
   }
 });
+
+// HU-206: Reportar médico
+router.post("/reportar-medico", reportarMedico);
 
 module.exports = router;

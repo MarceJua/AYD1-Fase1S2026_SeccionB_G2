@@ -20,6 +20,7 @@ const {
   cancelarCita,
   obtenerHistorialCitas,
   calificarPaciente,
+  reportarPaciente,
 } = require("../controllers/citasMedicoController");
 
 // GET  /api/medico/citas/pendientes -> obtener citas pendientes del médico autenticado
@@ -55,6 +56,9 @@ router.put(
 );
 
 // POST /api/medico/citas/calificar-paciente -> HU-205
-router.post("/citas/calificar-paciente", calificarPaciente);
+router.post("/citas/calificar-paciente", verifyMedicoToken, calificarPaciente);
+
+// POST /api/medico/citas/reportar-paciente -> HU-206
+router.post("/citas/reportar-paciente", verifyMedicoToken, reportarPaciente);
 
 module.exports = router;
