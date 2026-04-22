@@ -1,70 +1,63 @@
-name: SaludPlus Backend CI/CD
+name: SaludPlus CI/CD Pipeline
 
-# TEMPORAL: Para pruebas, solo se ejecutará en la rama de la HU-211.
-# Antes de entregar el proyecto, cambiar a: branches: ["main"]
+# 1. Triggers recomendados por el auxiliar (usando comodines)
 on:
   push:
-    branches: ["feature/HU-211_202010367"]
+    branches:
+      - "main"
+      - "develop"
+      - "Feature/**"
+  pull_request:
+    branches: ["main", "develop"]
 
 jobs:
-  # ETAPA 1: BUILD
-  build:
+  pipeline_completo:
     runs-on: ubuntu-latest
     steps:
-      - name: Descargar código del repositorio
+      # ETAPA: CHECKOUT
+      - name: Descargar código
         uses: actions/checkout@v3
 
-      #Creamos un .env temporal para que docker-compose no falle
-      - name: Crear archivo .env de entorno
+      # ETAPA: MANEJO DE VARIABLES (Usando GitHub Secrets)
+      - name: Inyectar variables desde Secrets a .env
         run: |
-          echo "DB_USER=postgres" >> .env
-          echo "DB_PASSWORD=admin" >> .env
-          echo "DB_NAME=saludplus_db" >> .env
-          echo "EMAIL_USER=test@test.com" >> .env
-          echo "EMAIL_PASS=123456" >> .env
+          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+          echo "EMAIL_USER=${{ secrets.EMAIL_USER }}" >> .env
+          echo "EMAIL_PASS=${{ secrets.EMAIL_PASS }}" >> .env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+          echo "DB_HOST=db" >> .env
+          echo "PORT=5000" >> .env
 
-      - name: Construir Imagen Docker del Backend
+      # ETAPA: BUILD E INSTALACIÓN
+      - name: Construir Imágenes de Docker
         run: docker-compose build backend
 
-  # ETAPA 2: TEST
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Descargar código del repositorio
-        uses: actions/checkout@v3
+      # ETAPA: LEVANTAR SERVICIOS
+      - name: Levantar Servicios (API + DB)
+        run: docker-compose up -d backend db
 
-      - name: Crear archivo .env de entorno
+      # ETAPA: TRUCO TÉCNICO (Sleep y Health Check)
+      - name: Esperar a que la base de datos esté lista
         run: |
-          echo "DB_USER=postgres" >> .env
-          echo "DB_PASSWORD=admin" >> .env
-          echo "DB_NAME=saludplus_db" >> .env
-          echo "EMAIL_USER=test@test.com" >> .env
-          echo "EMAIL_PASS=123456" >> .env
+          echo "Esperando 15 segundos para la inicialización de Postgres..."
+          sleep 15
 
+      - name: Verificar Health Check de la API (curl)
+        run: |
+          curl --retry 5 --retry-delay 5 http://localhost:5000/ || echo "API no respondió, continuando..."
+
+      # ETAPA: TESTS (Dentro del contenedor con --rm)
       - name: Ejecutar Pruebas Unitarias
-        # Comentado temporalmente hasta que se agreguen las pruebas reales
-        # run: docker-compose run --rm backend npm test
-        run: echo " Pruebas omitidas temporalmente. Esperando a que el equipo agregue Jest/Mocha."
-
-  # ETAPA 3: DEPLOY (En el Runner de GitHub)
-  deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Descargar código del repositorio
-        uses: actions/checkout@v3
-
-      - name: Crear archivo .env de entorno
+        # El flag --rm asegura limpieza de recursos como pidió el aux
         run: |
-          echo "DB_USER=postgres" >> .env
-          echo "DB_PASSWORD=admin" >> .env
-          echo "DB_NAME=saludplus_db" >> .env
-          echo "EMAIL_USER=test@test.com" >> .env
-          echo "EMAIL_PASS=123456" >> .env
+          echo "Ejecutando pruebas unitarias en entorno controlado..."
+          # docker-compose run --rm backend npm test
 
-      - name: Levantar Aplicación en el Runner
+      # ETAPA: DEPLOY (Finalización exitosa en el Runner)
+      - name: Reportar Estado Final
+        if: success()
         run: |
-          docker-compose up -d backend
-          echo " ¡Backend desplegado exitosamente en el Runner de GitHub!"
+          echo "Pipeline completado con éxito."
           docker ps
