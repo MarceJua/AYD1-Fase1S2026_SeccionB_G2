@@ -1,6 +1,5 @@
 name: SaludPlus CI/CD Pipeline
 
-# 1. Triggers recomendados por el auxiliar (usando comodines)
 on:
   push:
     branches:
@@ -14,11 +13,14 @@ jobs:
   pipeline_completo:
     runs-on: ubuntu-latest
     steps:
-      # ETAPA: CHECKOUT
       - name: Descargar código
         uses: actions/checkout@v3
 
-      # ETAPA: MANEJO DE VARIABLES (Usando GitHub Secrets)
+      - name: Mostrar versiones de Docker/Compose
+        run: |
+          docker --version
+          docker compose version
+
       - name: Inyectar variables desde Secrets a .env
         run: |
           echo "DB_USER=${{ secrets.DB_USER }}" >> .env
@@ -30,15 +32,12 @@ jobs:
           echo "DB_HOST=db" >> .env
           echo "PORT=5000" >> .env
 
-      # ETAPA: BUILD E INSTALACIÓN
       - name: Construir Imágenes de Docker
-        run: docker-compose build backend
+        run: docker compose build backend
 
-      # ETAPA: LEVANTAR SERVICIOS
       - name: Levantar Servicios (API + DB)
-        run: docker-compose up -d backend db
+        run: docker compose up -d backend db
 
-      # ETAPA: TRUCO TÉCNICO (Sleep y Health Check)
       - name: Esperar a que la base de datos esté lista
         run: |
           echo "Esperando 15 segundos para la inicialización de Postgres..."
@@ -48,14 +47,11 @@ jobs:
         run: |
           curl --retry 5 --retry-delay 5 http://localhost:5000/ || echo "API no respondió, continuando..."
 
-      # ETAPA: TESTS (Dentro del contenedor con --rm)
       - name: Ejecutar Pruebas Unitarias
-        # El flag --rm asegura limpieza de recursos como pidió el aux
         run: |
           echo "Ejecutando pruebas unitarias en entorno controlado..."
-          # docker-compose run --rm backend npm test
+          # docker compose run --rm backend npm test
 
-      # ETAPA: DEPLOY (Finalización exitosa en el Runner)
       - name: Reportar Estado Final
         if: success()
         run: |
