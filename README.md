@@ -1,4 +1,6 @@
-# AYD1-Fase1S2026_SeccionB_G2
+# AYD1-Fase2S2026_SeccionB_G2
+
+[![SaludPlus Backend CI/CD](https://github.com/MarceJua/AYD1-Fase1S2026_SeccionB_G2/actions/workflows/main.yml/badge.svg?branch=develop)](https://github.com/MarceJua/AYD1-Fase1S2026_SeccionB_G2/actions/workflows/main.yml)
 
 ## HU-001: Registro e Inicio de Sesión de Paciente
 
