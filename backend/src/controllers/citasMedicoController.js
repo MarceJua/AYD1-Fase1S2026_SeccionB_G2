@@ -212,9 +212,95 @@ const obtenerHistorialCitas = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/medico/citas/calificar-paciente
+ * HU-205: Médico califica a Paciente
+ */
+const calificarPaciente = async (req, res) => {
+  const { cita_id, estrellas, comentario } = req.body;
+
+  if (estrellas < 0 || estrellas > 5) {
+    return res.status(400).json({ error: "Las estrellas deben estar entre 0 y 5." });
+  }
+
+  try {
+    const citaQuery = await pool.query(
+      "SELECT estado FROM citas WHERE id = $1",
+      [cita_id]
+    );
+
+    if (citaQuery.rows.length === 0) {
+      return res.status(404).json({ error: "Cita no encontrada." });
+    }
+
+    if (citaQuery.rows[0].estado.toLowerCase() !== "atendido") {
+      return res.status(400).json({ error: "Solo se pueden calificar citas con estado 'Atendido'." });
+    }
+
+    const insertQuery = `
+      INSERT INTO calificaciones (cita_id, evaluador_rol, estrellas, comentario)
+      VALUES ($1, 'medico', $2, $3)
+      RETURNING *;
+    `;
+    const result = await pool.query(insertQuery, [cita_id, estrellas, comentario]);
+
+    res.status(201).json({ mensaje: "Paciente calificado exitosamente.", calificacion: result.rows[0] });
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(400).json({ error: "Ya has calificado a este paciente por esta cita." });
+    }
+    console.error("Error al calificar paciente:", error);
+    res.status(500).json({ error: "Error interno al guardar la calificación." });
+  }
+};
+
+/**
+ * POST /api/medico/citas/reportar-paciente
+ * HU-206: Médico reporta a Paciente
+ */
+const reportarPaciente = async (req, res) => {
+  const { cita_id, categoria, explicacion } = req.body;
+
+  if (!categoria || !explicacion) {
+    return res.status(400).json({ error: "La categoría y la explicación son obligatorias." });
+  }
+
+  try {
+    const citaQuery = await pool.query(
+      "SELECT estado FROM citas WHERE id = $1",
+      [cita_id]
+    );
+
+    if (citaQuery.rows.length === 0) {
+      return res.status(404).json({ error: "Cita no encontrada." });
+    }
+
+    if (citaQuery.rows[0].estado.toLowerCase() !== "atendido") {
+      return res.status(400).json({ error: "Solo se pueden reportar citas con estado 'Atendido'." });
+    }
+
+    const insertQuery = `
+      INSERT INTO reportes (cita_id, reportador_rol, categoria, explicacion)
+      VALUES ($1, 'medico', $2, $3)
+      RETURNING *;
+    `;
+    const result = await pool.query(insertQuery, [cita_id, categoria, explicacion]);
+
+    res.status(201).json({ mensaje: "Reporte enviado exitosamente al administrador.", reporte: result.rows[0] });
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(400).json({ error: "Ya has reportado a este paciente por esta cita." });
+    }
+    console.error("Error al reportar paciente:", error);
+    res.status(500).json({ error: "Error interno al guardar el reporte." });
+  }
+};
+  
 module.exports = {
   obtenerCitasPendientes,
   atenderPaciente,
   cancelarCita,
   obtenerHistorialCitas,
+  calificarPaciente,
+  reportarPaciente,
 };

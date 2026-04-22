@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS pacientes (
     nombre VARCHAR(100) NOT NULL,
     apellido VARCHAR(100) NOT NULL,
     dpi VARCHAR(20) UNIQUE NOT NULL,
+    dpi_pdf VARCHAR(255),
     genero VARCHAR(20),
     direccion VARCHAR(200),
     telefono VARCHAR(20),
@@ -40,7 +41,9 @@ CREATE TABLE IF NOT EXISTS medicos (
     estado VARCHAR(20) DEFAULT 'pendiente',
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     token_verificacion VARCHAR(6),
+    cv_pdf VARCHAR(255),
     correo_verificado BOOLEAN DEFAULT FALSE
+
 );
 
 -- Tabla de Citas (HU-007, referenciada en reportes HU-012)
@@ -79,4 +82,29 @@ CREATE TABLE IF NOT EXISTS horario_medico (
   dias        TEXT[],
   hora_inicio TIME NOT NULL,
   hora_fin    TIME NOT NULL
+);
+
+
+-- Tabla de Calificaciones (HU-205)
+CREATE TABLE IF NOT EXISTS calificaciones (
+    id SERIAL PRIMARY KEY,
+    cita_id INT REFERENCES citas(id) ON DELETE CASCADE,
+    evaluador_rol VARCHAR(20) CHECK (evaluador_rol IN ('paciente', 'medico')) NOT NULL,
+    estrellas INT CHECK (estrellas >= 0 AND estrellas <= 5) NOT NULL,
+    comentario TEXT,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Evitamos que un mismo rol califique la misma cita más de una vez
+    UNIQUE(cita_id, evaluador_rol) 
+);
+
+-- Tabla de Reportes / Denuncias (HU-206)
+CREATE TABLE IF NOT EXISTS reportes (
+    id SERIAL PRIMARY KEY,
+    cita_id INT REFERENCES citas(id) ON DELETE CASCADE,
+    reportador_rol VARCHAR(20) CHECK (reportador_rol IN ('paciente', 'medico')) NOT NULL,
+    categoria VARCHAR(100) NOT NULL,
+    explicacion TEXT NOT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Evitamos que un mismo rol reporte la misma cita más de una vez
+    UNIQUE(cita_id, reportador_rol)
 );
