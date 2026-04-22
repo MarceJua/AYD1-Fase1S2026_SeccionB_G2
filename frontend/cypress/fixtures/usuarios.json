@@ -1,0 +1,19 @@
+{
+  "paciente": {
+    "correo": "paciente_test@saludplus.com",
+    "contrasena": "Test1234!",
+    "nombre": "Juan",
+    "apellido": "Pérez"
+  },
+  "medico": {
+    "correo": "medico_test@saludplus.com",
+    "contrasena": "Test1234!",
+    "nombre": "Dr. Carlos",
+    "apellido": "García",
+    "especialidad": "Medicina General"
+  },
+  "admin": {
+    "correo": "admin@saludplus.com",
+    "contrasena": "Admin1234!"
+  }
+}
