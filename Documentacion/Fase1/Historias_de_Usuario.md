@@ -4,40 +4,53 @@ Este documento detalla los requerimientos ágiles del sistema, estimaciones y cr
 
 ---
 
-### HU-001: Registro de Paciente
+### HU-001 / HU-201: Registro de Paciente con Archivos (PDF)
 
 **Como** paciente nuevo,
-**Quiero** registrarme en el sistema ingresando mis datos personales,
-**Para** poder tener una cuenta y programar citas médicas.
+**Quiero** registrarme en el sistema ingresando mis datos personales y mi DPI en formato PDF,
+**Para** poder tener una cuenta verificada y programar citas médicas.
 
-- **Story Points:** 3
-- **Prioridad:** Alta (Sprint 1)
+- **Story Points:** 5
+- **Prioridad:** Alta (Sprint 1 / Sprint 2)
 - **Criterios de Aceptación:**
-  - El formulario debe pedir Nombre, Apellido, DPI, Fecha de Nacimiento, Correo y Contraseña.
+  - El formulario debe pedir Nombre, Apellido, DPI, Fecha de Nacimiento, Correo, Contraseña y un archivo PDF obligatorio del DPI.
   - La contraseña debe almacenarse encriptada en la base de datos usando `bcryptjs`.
-  - Si el correo o el DPI ya existen, el sistema debe mostrar un mensaje de error.
-  - Al registrarse correctamente, el estado del paciente debe ser 'aprobado' por defecto.
+  - Si faltan los archivos o el correo/DPI ya existen, el sistema no debe permitir el registro.
+  - El registro debe guardar las rutas del PDF en la base de datos para revisión del administrador.
 
 ---
 
-### HU-002: Registro de Médico
+### HU-002 / HU-201: Registro de Médico con Archivos (PDF)
 
 **Como** médico profesional,
-**Quiero** enviar mi solicitud de registro adjuntando mi foto y colegiado,
+**Quiero** enviar mi solicitud de registro adjuntando obligatoriamente mi foto reciente y mi CV en formato PDF,
 **Para** poder ofrecer mis servicios en la clínica SaludPlus.
 
 - **Story Points:** 5
-- **Prioridad:** Alta (Sprint 1)
+- **Prioridad:** Alta (Sprint 1 / Sprint 2)
 - **Criterios de Aceptación:**
-  - El formulario debe incluir carga de archivos obligatoria para la fotografía.
+  - El formulario debe incluir carga de archivos obligatoria para la fotografía y un archivo `.pdf` para el CV.
   - El número de colegiado y especialidad son campos obligatorios.
   - La contraseña debe encriptarse.
-  - El registro inicial debe quedar con estado 'pendiente' en la base de datos, bloqueando su acceso hasta que el administrador lo apruebe.
+  - El registro inicial debe quedar con estado 'pendiente' bloqueando su acceso hasta que el administrador lo apruebe.
 
 ---
 
+### HU-202: Validación de Correo con Token
 
+**Como** usuario nuevo (Médico o Paciente),
+**Quiero** recibir un código de verificación en mi correo electrónico tras registrarme,
+**Para** validar mi identidad en mi primer inicio de sesión.
 
+- **Story Points:** 8
+- **Prioridad:** Alta (Sprint 1)
+- **Criterios de Aceptación:**
+  - Al registrarse, el backend debe generar un token único y enviarlo mediante correo electrónico (Nodemailer) con diseño de "Salud Plus", logo e instrucciones.
+  - En el primer inicio de sesión, el sistema debe solicitar: Correo, Contraseña y Token.
+  - Se debe validar que el token sea correcto Y que el administrador ya haya aprobado la cuenta.
+  - Tras el primer inicio exitoso, la base de datos marca el correo como verificado y en futuros ingresos solo se pedirá Correo y Contraseña.
+
+---
 
 ### HU-004: Login de Administrador
 
@@ -55,17 +68,17 @@ Este documento detalla los requerimientos ágiles del sistema, estimaciones y cr
 
 ---
 
-### HU-005: Aceptar/Rechazar Usuarios
+### HU-005 / HU-207: Aceptar/Rechazar Usuarios y Visor PDF Incrustado
 
 **Como** administrador del sistema,
-**Quiero** ver la lista de médicos y pacientes pendientes y tener la opción de aprobarlos o rechazarlos,
-**Para** garantizar que solo personal verificado ingrese a la plataforma.
+**Quiero** ver la lista de médicos y pacientes pendientes visualizando directamente sus documentos PDF (DPI/CV) en la pantalla,
+**Para** garantizar y agilizar el proceso de verificación sin tener que descargar archivos en mi computadora.
 
 - **Story Points:** 5
-- **Prioridad:** Alta (Sprint 1)
+- **Prioridad:** Alta (Sprint 1 / Sprint 2)
 - **Criterios de Aceptación:**
-  - El dashboard debe mostrar dos tablas separadas: una para médicos pendientes y otra para pacientes pendientes.
-  - Debe mostrarse la foto del médico renderizada correctamente.
+  - El dashboard debe mostrar tablas separadas para médicos y pacientes pendientes.
+  - Los documentos (DPI de paciente y CV de médico) deben mostrarse incrustados en la web usando etiquetas `<iframe/>` o `<embed/>`.
   - Al hacer clic en "Aceptar", el estado en la BD debe cambiar a 'aprobado'.
   - Al hacer clic en "Rechazar", el estado en la BD debe cambiar a 'rechazado'.
 
@@ -141,6 +154,7 @@ problemas de compatibilidad entre las máquinas del equipo de desarrollo.
     bloquea la actualización y avisa al médico.
 
 ---
+
 ### HU-010: Gestión de Citas y Envío de Correo de Cancelación
 
 **Como** medico,
@@ -153,7 +167,7 @@ problemas de compatibilidad entre las máquinas del equipo de desarrollo.
   - Al iniciar sesión, el médico ve todas sus citas pendientes
     por fecha, mostrando: fecha, hora, nombre del paciente y motivo.
   - El médico puede marcar una cita como atendida, ingresando el tratamiento
-    indicado; 
+    indicado;
   - la cita desaparece de la lista de pendientes. luego de marcarla como atendida
   - El médico puede cancelar citas de pacientes enviando una notificacion
   - Al cancelar, se envía automáticamente un correo al paciente con: fecha,
@@ -175,21 +189,6 @@ problemas de compatibilidad entre las máquinas del equipo de desarrollo.
     y estado de la cita.
   - El médico puede ver su historial con: fecha, hora, nombre del paciente
     y estado de la cita (Atendido, Cancelado por paciente o por médico).
-
----
-
-
-### HU-012: Reportes Analíticos Visuales
-
-**Como** administrador,
-**Quiero** generar reportes sobre el uso de la plataforma,
-**Para** tomar mejores decisiones sobre los servicios que se ofrecen y obtener metricas de uso de la aplicacion, de los medicos y servicios.
-
-- **Story Points:** 5
-- **Prioridad:** Media (Sprint 2)
-- **Criterios de Aceptación:**
-  - Se generan al menos 2 reportes con información relevante del sistema.
-  - Los reportes se presentan de forma visual y clara.
 
 ---
 
@@ -228,9 +227,9 @@ cualquier situación que lo amerite.
   - Se muestra una lista de todos los médicos aprobados con opción de dar de baja.
   - Al dar de baja a un usuario, este pierde acceso al sistema inmediatamente.
 
-  ---
+---
 
-  ### HU-018: Ver Horarios del Médico y Lista de Citas Activas del Paciente
+### HU-018: Ver Horarios del Médico y Lista de Citas Activas del Paciente
 
 **Como** paciente registrado,
 **Quiero** poder consultar los horarios disponibles de un médico y ver mis
@@ -249,31 +248,6 @@ mis citas activas.
   - El paciente puede ver su lista de citas activas (aún no atendidas) con:
     fecha, hora, nombre del médico, dirección de la clínica y motivo de la cita.
 
-
-### HU-203: Tratamiento Estructurado Médico
-
-**Como** médico,
-**Quiero** registrar un diagnóstico y uno o más medicamentos al atender una cita,
-**Para** ofrecer al paciente un tratamiento estructurado y detallado que pueda consultar e imprimir como receta médica.
-
-- **Story Points:** 8
-- **Prioridad:** Alta (Sprint 2)
-- **Criterios de Aceptación:**
-  - Al dar clic en "Atender", el médico accede a un formulario con:
-    - Campo **Diagnóstico** (obligatorio).
-    - Sección de **Medicamentos** con al menos uno obligatorio; el médico puede agregar o eliminar medicamentos dinámicamente.
-    - Cada medicamento solicita: **Nombre**, **Cantidad**, **Tiempo** y **Descripción de la dosis** (todos obligatorios).
-  - El sistema valida que el diagnóstico no esté vacío y que cada medicamento tenga todos sus campos completos antes de guardar.
-  - Al guardar, la cita cambia de estado a `Atendido` y desaparece de la lista de citas pendientes del médico.
-  - El diagnóstico se almacena en la columna `diagnostico` de la tabla `citas`; cada medicamento se guarda como una fila en la tabla `medicamentos` vinculada a esa cita.
-  - El paciente puede visualizar en su historial el diagnóstico y la tabla de medicamentos recetados (nombre, cantidad, tiempo, descripción de dosis).
-  - El paciente dispone de un botón **"Imprimir Receta Médica"** que genera un PDF con:
-    - Encabezado: nombre de la clínica (SaludPlus), fecha de emisión y teléfono del médico.
-    - Datos del médico: nombre completo, especialidad y número de colegiado.
-    - Diagnóstico.
-    - Tabla con los medicamentos recetados.
-    - Pie de página: nombre del médico, especialidad y número de colegiado.
-
 ---
 
 ### HU-019: Cancelar Cita e Historial de Citas del Paciente
@@ -288,10 +262,133 @@ registro de mi historial de atención.
 - **Prioridad:** Media (Sprint 2)
 - **Criterios de Aceptación:**
   - El paciente puede cancelar una cita desde la vista de citas activas.
-  - Al intentar cancelar, aparece un mensaje de confirmación preguntando
-    si está seguro antes de proceder.
+  - Al intentar cancelar, el backend debe validar que existan al menos 24 horas de anticipación a la cita. Aparece un mensaje de confirmación antes de proceder.
   - Una vez cancelada, la cita desaparece de la lista de citas activas.
   - El paciente puede ver su historial de citas atendidas y canceladas con:
     fecha, nombre del médico, dirección de la clínica, motivo, tratamiento
-    (solo si fue atendida) y estado de la cita (Atendido, Cancelado por
-    paciente o por médico).
+    (solo si fue atendida) y estado de la cita.
+
+---
+
+### HU-203: Tratamiento Estructurado Médico
+
+**Como** médico,
+**Quiero** registrar un diagnóstico y uno o más medicamentos al atender una cita,
+**Para** ofrecer al paciente un tratamiento estructurado y detallado que pueda consultar e imprimir como receta médica.
+
+- **Story Points:** 8
+- **Prioridad:** Alta (Sprint 1)
+- **Criterios de Aceptación:**
+  - Al dar clic en "Atender", el médico accede a un formulario con: Campo **Diagnóstico** (obligatorio) y una sección de **Medicamentos** con al menos uno obligatorio (pudiendo agregar o eliminar dinámicamente).
+  - Cada medicamento solicita: **Nombre**, **Cantidad**, **Tiempo** y **Descripción de la dosis** (todos obligatorios).
+  - El sistema valida que el diagnóstico no esté vacío y que cada medicamento tenga todos sus campos completos antes de guardar.
+  - Al guardar, la cita cambia de estado a `Atendido` y desaparece de la lista de citas pendientes del médico.
+  - Los datos se guardan en tablas separadas mediante llaves foráneas (`citas` y `medicamentos`).
+
+---
+
+### HU-204: Visualización y Receta PDF Paciente
+
+**Como** paciente,
+**Quiero** visualizar mi diagnóstico y descargar mi receta médica en formato PDF,
+**Para** tener un documento formal de mis medicamentos y poder presentarlo en una farmacia.
+
+- **Story Points:** 5
+- **Prioridad:** Alta (Sprint 1)
+- **Criterios de Aceptación:**
+  - El paciente puede visualizar en su historial el diagnóstico y la tabla de medicamentos recetados (nombre, cantidad, tiempo, descripción de dosis).
+  - El paciente dispone de un botón "Imprimir Receta Médica" que genera y descarga un PDF.
+  - El PDF debe incluir: Encabezado (nombre de la clínica "SaludPlus", fecha de emisión, teléfono), Datos del médico (nombre, especialidad, colegiado), Diagnóstico, Tabla de medicamentos y Pie de página con firma del médico.
+
+---
+
+### HU-205: Sistema de Calificaciones Cruzadas
+
+**Como** paciente o médico,
+**Quiero** calificar la atención y el comportamiento de la otra parte tras una cita,
+**Para** ayudar a mantener un estándar de calidad y respeto en la plataforma.
+
+- **Story Points:** 3
+- **Prioridad:** Media (Sprint 1)
+- **Criterios de Aceptación:**
+  - El paciente califica al médico asignando de 0 a 5 estrellas y un comentario opcional.
+  - El médico califica al paciente asignando de 0 a 5 estrellas y un comentario opcional.
+  - SOLO se permite realizar y guardar la calificación si la cita se encuentra en estado "Atendida".
+  - El sistema evita que un usuario califique la misma cita más de una vez.
+
+---
+
+### HU-206: Sistema de Reportes/Denuncias
+
+**Como** paciente o médico,
+**Quiero** tener la opción de denunciar un comportamiento inadecuado de la contraparte,
+**Para** notificar a los administradores sobre problemas graves durante mi atención.
+
+- **Story Points:** 3
+- **Prioridad:** Media (Sprint 1)
+- **Criterios de Aceptación:**
+  - Pacientes y médicos tienen un botón para reportarse mutuamente desde el historial.
+  - El formulario de denuncia exige seleccionar una categoría predefinida mediante un ComboBox (ej. "Conducta inapropiada", "Negligencia").
+  - El usuario debe proporcionar una explicación en un área de texto.
+  - Solo se pueden generar denuncias sobre citas que estén en estado "Atendidas".
+
+---
+
+### HU-208: Gestión de Reportes y Calificaciones
+
+**Como** Administrador del sistema,
+**Quiero** tener un panel para revisar todas las denuncias y visualizar los promedios de calificaciones de los usuarios,
+**Para** tomar acciones disciplinarias si es necesario y garantizar la seguridad de la comunidad.
+
+- **Story Points:** 5
+- **Prioridad:** Media (Sprint 2)
+- **Criterios de Aceptación:**
+  - El sistema debe mostrar una bandeja centralizada con las denuncias emitidas contra médicos y pacientes, detallando la categoría y el motivo.
+  - El administrador debe tener un botón para "Descartar/Rechazar" la denuncia (eliminándola de la vista) y otro para "Dar de baja" al usuario acusado.
+  - En una sección separada, se deben mostrar tablas con los promedios de calificación acumulados de todos los médicos y pacientes del sistema.
+
+---
+
+### HU-209: Nuevos Reportes Analíticos
+
+**Como** Administrador del sistema,
+**Quiero** visualizar nuevos gráficos analíticos,
+**Para** identificar tendencias de uso y comportamiento en la clínica.
+
+- **Story Points:** 5
+- **Prioridad:** Baja (Sprint 2)
+- **Criterios de Aceptación:**
+  - Integrar 2 nuevos gráficos utilizando librerías de visualización (ej. Chart.js).
+  - Gráfico 1: Un reporte en forma de Dona/Pastel que muestre las Franjas Horarias más demandadas (Mañana, Tarde, Noche).
+  - Gráfico 2: Un reporte en forma de Barras que muestre las Especialidades médicas con mayor cantidad de citas "Canceladas".
+
+---
+
+### HU-210: Pruebas Automatizadas E2E y Unitarias
+
+**Como** equipo de desarrollo,
+**Queremos** implementar pruebas automatizadas en nuestro código,
+**Para** asegurar la calidad del software y prevenir errores en funcionalidades críticas antes de desplegar.
+
+- **Story Points:** 8
+- **Prioridad:** Alta (Sprint 2)
+- **Criterios de Aceptación:**
+  - Se deben crear y pasar exitosamente al menos 5 pruebas Unitarias en el backend (ej. usando Jest/Mocha) evaluando funciones o endpoints críticos.
+  - Se deben crear y pasar exitosamente al menos 5 pruebas End-to-End (E2E) simulando el comportamiento del usuario en la interfaz gráfica (ej. usando Selenium, Cypress o Puppeteer).
+  - Las pruebas E2E deben evaluar flujos completos (ej. Login exitoso, agendar cita, etc.).
+
+---
+
+### HU-211: Pipeline CI/CD y Despliegue Cloud
+
+**Como** equipo de desarrollo,
+**Queremos** automatizar el proceso de integración continua y desplegar el proyecto en la nube,
+**Para** que la aplicación sea accesible públicamente en internet sin intervención manual tras cada actualización.
+
+- **Story Points:** 8
+- **Prioridad:** Alta (Sprint 2)
+- **Criterios de Aceptación:**
+  - El Frontend (React) debe estar desplegado y accesible mediante una URL pública utilizando plataformas como Vercel, Netlify o AWS S3.
+  - Se debe configurar un pipeline automatizado mediante GitHub Actions.
+  - El pipeline debe tener stages de Build, Test (ejecutando las pruebas de la HU-210) y Deploy del Backend hacia un servidor en la nube.
+  - El trigger (disparador) del pipeline de CI/CD debe configurarse para que se ejecute **únicamente** cuando se haga un push/merge a la rama `main`.
