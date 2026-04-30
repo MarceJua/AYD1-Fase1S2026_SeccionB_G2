@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS pacientes (
     nombre VARCHAR(100) NOT NULL,
     apellido VARCHAR(100) NOT NULL,
     dpi VARCHAR(20) UNIQUE NOT NULL,
+    dpi_pdf VARCHAR(255),
     genero VARCHAR(20),
     direccion VARCHAR(200),
     telefono VARCHAR(20),
@@ -40,7 +41,9 @@ CREATE TABLE IF NOT EXISTS medicos (
     estado VARCHAR(20) DEFAULT 'pendiente',
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     token_verificacion VARCHAR(6),
+    cv_pdf VARCHAR(255),
     correo_verificado BOOLEAN DEFAULT FALSE
+
 );
 
 -- Tabla de Citas (HU-007, referenciada en reportes HU-012)
