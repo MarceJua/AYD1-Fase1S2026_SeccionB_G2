@@ -59,6 +59,10 @@ CREATE TABLE IF NOT EXISTS citas (
 -- Migración segura para bases de datos existentes (HU-203)
 ALTER TABLE citas ADD COLUMN IF NOT EXISTS diagnostico TEXT;
 
+-- Migración para Fase 2: Archivos PDF de registro
+ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS dpi_pdf VARCHAR(255);
+ALTER TABLE medicos ADD COLUMN IF NOT EXISTS cv_pdf VARCHAR(255);
+
 -- Tabla de Medicamentos recetados por cita (HU-203)
 CREATE TABLE IF NOT EXISTS medicamentos (
   id               SERIAL PRIMARY KEY,
