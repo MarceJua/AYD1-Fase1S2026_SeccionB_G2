@@ -395,3 +395,9 @@
 **¿Qué hicimos ayer?** Todas las tareas de DevOps, Pruebas y Documentación fueron entregadas. Hemos consolidado el código y el pipeline en GitHub Actions pasó exitosamente tras el merge a `main`.
 **¿Qué haremos hoy?** Realizar la Sprint Retrospective 2 (video final), grabar demostraciones de flujos en caso de que el CI/CD tarde en la calificación, y generar el Release Tag `v2.2.0` en GitHub.
 **¿Impedimentos?** Ninguno, Proyecto Fase 2 finalizado.
+
+
+
+
+## Enlace para Video de Scrum Planning and Retrospective
+>https://drive.google.com/drive/folders/1iVz9mzLCpoytvGVbVNAHfhW-itU2UlUh?usp=sharing
