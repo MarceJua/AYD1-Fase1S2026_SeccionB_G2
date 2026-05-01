@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS pacientes (
     nombre VARCHAR(100) NOT NULL,
     apellido VARCHAR(100) NOT NULL,
     dpi VARCHAR(20) UNIQUE NOT NULL,
+    dpi_pdf VARCHAR(255),
     genero VARCHAR(20),
     direccion VARCHAR(200),
     telefono VARCHAR(20),
@@ -40,7 +41,9 @@ CREATE TABLE IF NOT EXISTS medicos (
     estado VARCHAR(20) DEFAULT 'pendiente',
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     token_verificacion VARCHAR(6),
+    cv_pdf VARCHAR(255),
     correo_verificado BOOLEAN DEFAULT FALSE
+
 );
 
 -- Tabla de Citas (HU-007, referenciada en reportes HU-012)
@@ -58,6 +61,10 @@ CREATE TABLE IF NOT EXISTS citas (
 
 -- Migración segura para bases de datos existentes (HU-203)
 ALTER TABLE citas ADD COLUMN IF NOT EXISTS diagnostico TEXT;
+
+-- Migración para Fase 2: Archivos PDF de registro
+ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS dpi_pdf VARCHAR(255);
+ALTER TABLE medicos ADD COLUMN IF NOT EXISTS cv_pdf VARCHAR(255);
 
 -- Tabla de Medicamentos recetados por cita (HU-203)
 CREATE TABLE IF NOT EXISTS medicamentos (
