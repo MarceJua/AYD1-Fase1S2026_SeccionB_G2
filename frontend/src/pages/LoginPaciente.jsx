@@ -11,6 +11,7 @@ const LoginPaciente = () => {
     password: "",
   });
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "" });
+  const demoPaciente = { correo: "paciente@demo.com", password: "demo123" };
   
   // Estados para el token de verificación (HU-202)
   const [mostrarTokenInput, setMostrarTokenInput] = useState(false);
@@ -20,12 +21,12 @@ const LoginPaciente = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, overrideFormData = null) => {
     e.preventDefault();
     
     // Preparamos el payload. Si el input del token está visible, lo agregamos.
-    const payload = { ...formData };
-    if (mostrarTokenInput) {
+    const payload = { ...(overrideFormData || formData) };
+    if (mostrarTokenInput && !overrideFormData) {
       payload.token = tokenVerificacion;
     }
 
@@ -60,6 +61,13 @@ const LoginPaciente = () => {
         tipo: "error",
       });
     }
+  };
+
+  const handleDemoLogin = () => {
+    setFormData(demoPaciente);
+    setMostrarTokenInput(false);
+    setTokenVerificacion("");
+    handleSubmit({ preventDefault: () => {} }, demoPaciente);
   };
 
   return (
@@ -109,6 +117,15 @@ const LoginPaciente = () => {
 
           <button className="auth-button" type="submit">
             {mostrarTokenInput ? "Verificar y Entrar" : "Entrar a mi portal"}
+          </button>
+
+          <button
+            className="auth-button"
+            type="button"
+            onClick={handleDemoLogin}
+            style={{ marginTop: "0.75rem", backgroundColor: "#e2e8f0", color: "#0f172a" }}
+          >
+            Probar como Paciente (Demo)
           </button>
         </form>
 

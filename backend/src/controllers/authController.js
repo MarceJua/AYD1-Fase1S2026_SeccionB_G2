@@ -5,6 +5,24 @@ const fs = require("fs");
 const path = require("path");
 const nodemailer = require("nodemailer");
 
+const DEMO_CREDENTIALS = {
+  admin: { usuario: "admin@demo.com", password: "demo123" },
+  medico: { correo: "medico@demo.com", password: "demo123" },
+  paciente: { correo: "paciente@demo.com", password: "demo123" },
+};
+
+const esCuentaDemo = (correo) => {
+  return [
+    DEMO_CREDENTIALS.admin.usuario,
+    DEMO_CREDENTIALS.medico.correo,
+    DEMO_CREDENTIALS.paciente.correo,
+  ].includes(String(correo || "").toLowerCase());
+};
+
+const esCuentaAprobada = (estado) => {
+  return ["aprobado", "aceptado"].includes(String(estado || "").toLowerCase());
+};
+
 // REGISTRO DE PACIENTE
 const registrarPaciente = async (req, res) => {
   const tokenVerificacion = generarToken();
@@ -163,7 +181,7 @@ const loginPaciente = async (req, res) => {
     const usuario = result.rows[0];
 
     // 2. VALIDACIÓN CRÍTICA: ¿Está aprobado?
-    if (usuario.estado !== "aprobado") {
+    if (!esCuentaAprobada(usuario.estado)) {
       return res.status(403).json({
         error: "Su cuenta está pendiente de aprobación por el administrador.",
       });
@@ -175,7 +193,7 @@ const loginPaciente = async (req, res) => {
       return res.status(400).json({ error: "Credenciales inválidas" });
     }
 
-    if (!usuario.correo_verificado) {
+    if (!usuario.correo_verificado && !esCuentaDemo(correo)) {
       // Si su correo NO está verificado, EXIGIMOS que mande el token en la petición
       if (!tokenVerificacionIngresado) {
         return res.status(403).json({
@@ -334,7 +352,7 @@ const loginMedico = async (req, res) => {
     const medico = result.rows[0];
 
     // 2. VALIDACIÓN CRÍTICA: ¿Está aprobado? (Requisito de la Fase 1)
-    if (medico.estado !== "aprobado") {
+    if (!esCuentaAprobada(medico.estado)) {
       return res.status(403).json({
         error: "Su cuenta está pendiente de aprobación por el administrador.",
       });
@@ -347,7 +365,7 @@ const loginMedico = async (req, res) => {
     }
 
     // --- HU-202: VALIDACIÓN DE CORREO ---
-    if (!medico.correo_verificado) {
+    if (!medico.correo_verificado && !esCuentaDemo(correo)) {
       if (!tokenVerificacionIngresado) {
         return res.status(403).json({
           error:
@@ -399,6 +417,29 @@ const loginAdmin = async (req, res) => {
   const { usuario, password } = req.body;
 
   try {
+    const esDemoAdmin =
+      String(usuario || "").toLowerCase() === DEMO_CREDENTIALS.admin.usuario &&
+      password === DEMO_CREDENTIALS.admin.password;
+
+    if (esDemoAdmin) {
+      const tokenSesion = jwt.sign(
+        { id: "admin-demo", rol: "admin", usuario },
+        process.env.JWT_SECRET || "mi_clave_secreta",
+        { expiresIn: "8h" },
+      );
+
+      return res.json({
+        mensaje: "Inicio de sesión demo exitoso",
+        token: tokenSesion,
+        usuario: {
+          id: "admin-demo",
+          nombre: "Administrador Demo",
+          rol: "admin",
+          usuario,
+        },
+      });
+    }
+
     // Credenciales predeterminadas del administrador
     const adminUsuario = "admin";
     const adminPassword = "admin123";

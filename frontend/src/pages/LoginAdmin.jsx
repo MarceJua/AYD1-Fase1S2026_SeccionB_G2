@@ -11,19 +11,36 @@ const LoginAdmin = () => {
   });
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "" });
   const [cargando, setCargando] = useState(false);
+  const demoAdmin = { usuario: "admin@demo.com", password: "demo123" };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, overrideFormData = null) => {
     e.preventDefault();
     setCargando(true);
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/admin/login`,
-        formData,
+        overrideFormData || formData,
       );
+
+      if (response.data.token && !response.data.requiere2FA) {
+        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("usuario", JSON.stringify(response.data.usuario));
+        localStorage.setItem("rol", "admin");
+
+        setMensaje({
+          texto: "Acceso demo completado. Redirigiendo al panel.",
+          tipo: "success",
+        });
+
+        setTimeout(() => {
+          navigate("/admin-dashboard");
+        }, 1000);
+        return;
+      }
 
       // El servidor devuelve un token temporal y requiere 2FA
       if (response.data.requiere2FA) {
@@ -48,6 +65,11 @@ const LoginAdmin = () => {
     } finally {
       setCargando(false);
     }
+  };
+
+  const handleDemoLogin = () => {
+    setFormData(demoAdmin);
+    handleSubmit({ preventDefault: () => {} }, demoAdmin);
   };
 
   return (
@@ -83,6 +105,16 @@ const LoginAdmin = () => {
           />
           <button className="auth-button" type="submit" disabled={cargando}>
             {cargando ? "Validando..." : "Continuar"}
+          </button>
+
+          <button
+            className="auth-button"
+            type="button"
+            onClick={handleDemoLogin}
+            disabled={cargando}
+            style={{ marginTop: "0.75rem", backgroundColor: "#e2e8f0", color: "#0f172a" }}
+          >
+            Probar como Admin (Demo)
           </button>
         </form>
 

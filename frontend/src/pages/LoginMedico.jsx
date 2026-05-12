@@ -7,6 +7,7 @@ const LoginMedico = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ correo: "", password: "" });
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "" });
+  const demoMedico = { correo: "medico@demo.com", password: "demo123" };
 
   // Estados para el token de verificación (HU-202)
   const [mostrarTokenInput, setMostrarTokenInput] = useState(false);
@@ -14,12 +15,12 @@ const LoginMedico = () => {
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, overrideFormData = null) => {
     e.preventDefault();
     
     // Preparamos el payload. Si el input del token está visible, lo agregamos.
-    const payload = { ...formData };
-    if (mostrarTokenInput) {
+    const payload = { ...(overrideFormData || formData) };
+    if (mostrarTokenInput && !overrideFormData) {
       payload.token = tokenVerificacion;
     }
 
@@ -56,6 +57,13 @@ const LoginMedico = () => {
 
       setMensaje({ texto: "❌ " + (error.response?.data?.error || "Credenciales inválidas"), tipo: "error" });
     }
+  };
+
+  const handleDemoLogin = () => {
+    setFormData(demoMedico);
+    setMostrarTokenInput(false);
+    setTokenVerificacion("");
+    handleSubmit({ preventDefault: () => {} }, demoMedico);
   };
 
   return (
@@ -102,6 +110,15 @@ const LoginMedico = () => {
 
           <button className="auth-button" type="submit" style={{ backgroundColor: '#64748b' }}>
             {mostrarTokenInput ? "Verificar y Entrar" : "Entrar como Médico"}
+          </button>
+
+          <button
+            className="auth-button"
+            type="button"
+            onClick={handleDemoLogin}
+            style={{ marginTop: "0.75rem", backgroundColor: "#e2e8f0", color: "#0f172a" }}
+          >
+            Probar como Médico (Demo)
           </button>
         </form>
 
