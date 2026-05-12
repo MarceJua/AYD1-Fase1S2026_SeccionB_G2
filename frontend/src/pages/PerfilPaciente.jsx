@@ -24,7 +24,7 @@ const PerfilPaciente = () => {
         dpi: usuarioLogueado.dpi || "",
       });
     } else {
-      navigate("/login"); // Si no hay usuario, lo mandamos al login
+      navigate("/demo"); // Si no hay usuario, lo mandamos a la Demo Center
     }
   }, [navigate]);
 

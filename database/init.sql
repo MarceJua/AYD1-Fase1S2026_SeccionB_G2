@@ -112,3 +112,116 @@ CREATE TABLE IF NOT EXISTS reportes (
     -- Evitamos que un mismo rol reporte la misma cita más de una vez
     UNIQUE(cita_id, reportador_rol)
 );
+
+-- ============================================================================
+-- DEMO DE PORTAFOLIO
+-- ============================================================================
+-- No existe una tabla admins en este esquema; el acceso demo del administrador
+-- se resuelve en backend/authController.js con las credenciales admin@demo.com / demo123.
+
+INSERT INTO pacientes (
+  nombre,
+  apellido,
+  dpi,
+  genero,
+  direccion,
+  telefono,
+  fecha_nacimiento,
+  foto,
+  dpi_pdf,
+  correo,
+  password,
+  rol,
+  estado,
+  token_verificacion,
+  correo_verificado
+) VALUES (
+  'Paciente',
+  'Demo',
+  '9000000000001',
+  'Masculino',
+  'Ciudad Demo, Guatemala',
+  '55550001',
+  '1995-01-15',
+  'uploads/demo-paciente.jpg',
+  NULL,
+  'paciente@demo.com',
+  '$2b$10$x9mqfulpPwrT8lhs1t1QPeFLzF7zzOsFq/1LDqCTvoHwYLeS2v8hS',
+  'paciente',
+  'aceptado',
+  NULL,
+  TRUE
+)
+ON CONFLICT (correo) DO UPDATE SET
+  nombre = EXCLUDED.nombre,
+  apellido = EXCLUDED.apellido,
+  dpi = EXCLUDED.dpi,
+  genero = EXCLUDED.genero,
+  direccion = EXCLUDED.direccion,
+  telefono = EXCLUDED.telefono,
+  fecha_nacimiento = EXCLUDED.fecha_nacimiento,
+  foto = EXCLUDED.foto,
+  dpi_pdf = EXCLUDED.dpi_pdf,
+  password = EXCLUDED.password,
+  rol = EXCLUDED.rol,
+  estado = EXCLUDED.estado,
+  token_verificacion = EXCLUDED.token_verificacion,
+  correo_verificado = EXCLUDED.correo_verificado;
+
+INSERT INTO medicos (
+  nombre,
+  apellido,
+  dpi,
+  fecha_nacimiento,
+  genero,
+  direccion,
+  telefono,
+  foto,
+  numero_colegiado,
+  especialidad,
+  direccion_clinica,
+  correo,
+  contrasena,
+  rol,
+  estado,
+  token_verificacion,
+  cv_pdf,
+  correo_verificado
+) VALUES (
+  'Medico',
+  'Demo',
+  '9000000000002',
+  '1990-07-20',
+  'Masculino',
+  'Zona Demo, Guatemala',
+  '55550002',
+  'uploads/demo-medico.jpg',
+  'COLEGIADO-DEMO-01',
+  'Medicina General',
+  'Clínica Demo, Guatemala',
+  'medico@demo.com',
+  '$2b$10$x9mqfulpPwrT8lhs1t1QPeFLzF7zzOsFq/1LDqCTvoHwYLeS2v8hS',
+  'medico',
+  'aceptado',
+  NULL,
+  NULL,
+  TRUE
+)
+ON CONFLICT (correo) DO UPDATE SET
+  nombre = EXCLUDED.nombre,
+  apellido = EXCLUDED.apellido,
+  dpi = EXCLUDED.dpi,
+  fecha_nacimiento = EXCLUDED.fecha_nacimiento,
+  genero = EXCLUDED.genero,
+  direccion = EXCLUDED.direccion,
+  telefono = EXCLUDED.telefono,
+  foto = EXCLUDED.foto,
+  numero_colegiado = EXCLUDED.numero_colegiado,
+  especialidad = EXCLUDED.especialidad,
+  direccion_clinica = EXCLUDED.direccion_clinica,
+  contrasena = EXCLUDED.contrasena,
+  rol = EXCLUDED.rol,
+  estado = EXCLUDED.estado,
+  token_verificacion = EXCLUDED.token_verificacion,
+  cv_pdf = EXCLUDED.cv_pdf,
+  correo_verificado = EXCLUDED.correo_verificado;

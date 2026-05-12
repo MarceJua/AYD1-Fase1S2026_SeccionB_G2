@@ -22,9 +22,9 @@ const Admin2FA = () => {
           <p className="auth-subtitle">Por favor, inicia sesión primero</p>
           <button 
             className="auth-button" 
-            onClick={() => navigate("/admin-login")}
+            onClick={() => navigate("/demo")}
           >
-            Volver al login
+            Volver a Demo Center
           </button>
         </div>
       </div>
@@ -102,7 +102,7 @@ const Admin2FA = () => {
 
         <div className="auth-footer">
           <button 
-            onClick={() => navigate("/admin-login")}
+            onClick={() => navigate("/demo")}
             style={{ 
               background: "none", 
               border: "none", 
@@ -111,7 +111,7 @@ const Admin2FA = () => {
               textDecoration: "underline"
             }}
           >
-            Volver al primer factor
+            Volver a Demo Center
           </button>
         </div>
       </div>
