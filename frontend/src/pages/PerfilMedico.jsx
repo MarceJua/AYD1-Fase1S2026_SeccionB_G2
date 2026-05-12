@@ -176,7 +176,7 @@ export default function PerfilMedico() {
             onClick={() => {
               localStorage.removeItem("token");
               localStorage.removeItem("usuario");
-              navigate("/login-medico");
+              navigate("/demo");
             }}
             style={styles.btnCerrarSesion}
           >

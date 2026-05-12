@@ -38,7 +38,7 @@ const AdminDashboard = () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        navigate("/admin-login");
+        navigate("/demo");
         return;
       }
 
@@ -339,7 +339,7 @@ const AdminDashboard = () => {
           className="btn-logout"
           onClick={() => {
             localStorage.removeItem("token");
-            navigate("/admin-login");
+              navigate("/demo");
           }}
         >
           Cerrar Sesión

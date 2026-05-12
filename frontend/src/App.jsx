@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // Importaciones directas desde la carpeta pages
+import DemoCenter from "./pages/DemoCenter";
 import RegistroPaciente from "./pages/RegistroPaciente";
 import LoginPaciente from "./pages/LoginPaciente";
 import LoginMedico from "./pages/LoginMedico";
@@ -20,7 +21,8 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/" element={<Navigate to="/demo" />} />
+        <Route path="/demo" element={<DemoCenter />} />
         {/* Rutas Públicas */}
         <Route path="/login" element={<LoginPaciente />} />
         <Route path="/login-medico" element={<LoginMedico />} />
