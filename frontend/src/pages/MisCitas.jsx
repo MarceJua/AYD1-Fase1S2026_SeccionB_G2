@@ -32,7 +32,7 @@ const MisCitas = () => {
   useEffect(() => {
     const usuarioLogueado = JSON.parse(localStorage.getItem("usuario"));
     if (!usuarioLogueado) {
-      navigate("/login");
+      navigate("/demo");
       return;
     }
 

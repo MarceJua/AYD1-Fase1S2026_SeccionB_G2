@@ -355,7 +355,7 @@ const DashboardPaciente = () => {
             <button className="btn-perfil" onClick={() => navigate("/perfil")}>
               Modificar Datos
             </button>
-            <button className="btn-logout" onClick={() => navigate("/login")}>
+            <button className="btn-logout" onClick={() => navigate("/demo")}>
               Cerrar Sesion
             </button>
           </div>

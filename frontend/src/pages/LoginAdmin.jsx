@@ -119,7 +119,7 @@ const LoginAdmin = () => {
         </form>
 
         <div className="auth-footer">
-          <Link to="/login">Volver al inicio de sesión</Link>
+          <Link to="/demo">Volver a Demo Center</Link>
         </div>
       </div>
     </div>
