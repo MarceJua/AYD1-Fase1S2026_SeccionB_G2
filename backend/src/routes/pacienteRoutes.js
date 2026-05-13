@@ -2,7 +2,11 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../config/db"); // Tu conexión a la BD
-const { programarCita, calificarMedico, reportarMedico } = require("../controllers/pacienteController");
+const {
+  programarCita,
+  calificarMedico,
+  reportarMedico,
+} = require("../controllers/pacienteController");
 
 // Ruta para programar cita (HU-008)
 router.post("/programar-cita", programarCita);
@@ -158,6 +162,31 @@ router.put("/perfil/:id", async (req, res) => {
   const { nombre, correo } = req.body;
 
   try {
+    const pacienteActual = await pool.query(
+      "SELECT correo FROM pacientes WHERE id = $1",
+      [id],
+    );
+
+    if (pacienteActual.rows.length === 0) {
+      return res.status(404).json({ error: "Paciente no encontrado." });
+    }
+
+    const correoActual = String(
+      pacienteActual.rows[0].correo || "",
+    ).toLowerCase();
+    const correoDemoPaciente = "paciente@demo.com";
+
+    const correoNuevo = String(correo || "").toLowerCase();
+
+    if (
+      correoActual === correoDemoPaciente &&
+      correoNuevo !== correoDemoPaciente
+    ) {
+      return res.status(403).json({
+        error: "La cuenta demo de paciente no permite cambiar el correo.",
+      });
+    }
+
     // Verificamos si el nuevo correo ya le pertenece a OTRO usuario (para no duplicar)
     const checkCorreo = await pool.query(
       "SELECT id FROM pacientes WHERE correo = $1 AND id != $2",
@@ -178,10 +207,6 @@ router.put("/perfil/:id", async (req, res) => {
       RETURNING id, nombre, dpi, correo
     `;
     const result = await pool.query(updateQuery, [nombre, correo, id]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Paciente no encontrado." });
-    }
 
     res.json({
       mensaje: "Perfil actualizado correctamente",
