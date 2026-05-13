@@ -372,6 +372,34 @@ ON CONFLICT (cita_id, reportador_rol) DO UPDATE SET
   categoria = EXCLUDED.categoria,
   explicacion = EXCLUDED.explicacion;
 
+-- =================================================================
+-- USUARIOS MAESTROS PARA LOS BOTONES DE DEMO (QUICK LOGIN)
+-- =================================================================
+
+INSERT INTO pacientes (nombre, apellido, dpi, genero, direccion, telefono, fecha_nacimiento, foto, correo, password, rol, estado, correo_verificado)
+VALUES (
+    'Paciente', 'Demo', '0000000000001', 'Masculino', 'Ciudad Demo', '11111111', '1995-05-15', 
+    '/uploads/demo-avatar.jpg', 'paciente@demo.com', 
+    '$2a$10$wO9W7x9y.fKx2XQ2E6cMyeR.A1y7Z/M6D/5M4T.fN8r4ZgZ4Z4Z4Z', 
+    'paciente', 'aceptado', true
+) ON CONFLICT (correo) DO NOTHING;
+
+INSERT INTO medicos (nombre, apellido, dpi, fecha_nacimiento, genero, direccion, telefono, foto, numero_colegiado, especialidad, direccion_clinica, correo, contrasena, rol, estado, correo_verificado)
+VALUES (
+    'Doctor', 'Demo', '0000000000002', '1980-10-10', 'Femenino', 'Ciudad Demo', '22222222', 
+    '/uploads/demo-doc.jpg', 'DEMO-999', 'Medicina General', 'Clínica Principal', 'medico@demo.com', 
+    '$2a$10$wO9W7x9y.fKx2XQ2E6cMyeR.A1y7Z/M6D/5M4T.fN8r4ZgZ4Z4Z4Z', 
+    'medico', 'aceptado', true
+) ON CONFLICT (correo) DO NOTHING;
+
+-- Aseguramos que el Doctor Demo tenga horario para que el dashboard no falle
+INSERT INTO horario_medico (medico_id, dias, hora_inicio, hora_fin)
+VALUES (
+    (SELECT id FROM medicos WHERE correo = 'medico@demo.com'),
+    ARRAY['lunes', 'martes', 'miercoles', 'jueves', 'viernes'],
+    '08:00:00', '16:00:00'
+) ON CONFLICT (medico_id) DO NOTHING;
+
 SELECT setval(pg_get_serial_sequence('citas', 'id'), (SELECT COALESCE(MAX(id), 1) FROM citas));
 SELECT setval(pg_get_serial_sequence('medicamentos', 'id'), (SELECT COALESCE(MAX(id), 1) FROM medicamentos));
 SELECT setval(pg_get_serial_sequence('pacientes', 'id'), (SELECT COALESCE(MAX(id), 1) FROM pacientes));
