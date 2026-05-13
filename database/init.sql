@@ -407,3 +407,7 @@ SELECT setval(pg_get_serial_sequence('medicos', 'id'), (SELECT COALESCE(MAX(id),
 SELECT setval(pg_get_serial_sequence('horario_medico', 'id'), (SELECT COALESCE(MAX(id), 1) FROM horario_medico));
 SELECT setval(pg_get_serial_sequence('calificaciones', 'id'), (SELECT COALESCE(MAX(id), 1) FROM calificaciones));
 SELECT setval(pg_get_serial_sequence('reportes', 'id'), (SELECT COALESCE(MAX(id), 1) FROM reportes));
+
+-- Convertir un par de cuentas a estado pendiente para alimentar el Dashboard del Admin
+UPDATE pacientes SET estado = 'pendiente' WHERE id IN (11, 12);
+UPDATE medicos SET estado = 'pendiente' WHERE id IN (14, 15);
