@@ -1,57 +1,42 @@
-name: SaludPlus CI/CD Pipeline
+name: Deploy SaludPlus to Droplet
 
 on:
   push:
     branches:
       - "main"
-  pull_request:
-    branches: ["main", "develop"]
 
 jobs:
-  pipeline_completo:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Descargar código
+      - name: Checkout código
         uses: actions/checkout@v3
 
-      - name: Mostrar versiones de Docker/Compose
-        run: |
-          docker --version
-          docker compose version
+      - name: Desplegar a DigitalOcean vía SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }} # Este debe ser 'saludplus' en GitHub Secrets
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            # Crear directorio si no existe
+            mkdir -p /home/saludplus/app
+            cd /home/saludplus/app
+            
+            # Limpiar repositorio viejo (si existe) y clonar la rama main
+            # Nota: Recomendable usar deploy keys o tokens si tu repo es privado
+            git pull origin main || git clone https://github.com/MarceJua/AYD1-Fase1S2026_SeccionB_G2.git .
+            git checkout main
+            git pull origin main
 
-      - name: Inyectar variables desde Secrets a .env
-        run: |
-          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
-          echo "EMAIL_USER=${{ secrets.EMAIL_USER }}" >> .env
-          echo "EMAIL_PASS=${{ secrets.EMAIL_PASS }}" >> .env
-          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
-          echo "DB_HOST=db" >> .env
-          echo "PORT=5000" >> .env
+            # Crear el archivo .env con las variables de GitHub Secrets
+            echo "DB_USER=${{ secrets.DB_USER }}" > .env
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+            echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+            echo "EMAIL_USER=${{ secrets.EMAIL_USER }}" >> .env
+            echo "EMAIL_PASS=${{ secrets.EMAIL_PASS }}" >> .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
 
-      - name: Construir Imágenes de Docker
-        run: docker compose build backend
-
-      - name: Levantar Servicios (API + DB)
-        run: docker compose up -d backend db
-
-      - name: Esperar a que la base de datos esté lista
-        run: |
-          echo "Esperando 15 segundos para la inicialización de Postgres..."
-          sleep 15
-
-      - name: Verificar Health Check de la API (curl)
-        run: |
-          curl --retry 5 --retry-delay 5 http://localhost:5000/ || echo "API no respondió, continuando..."
-
-      - name: Ejecutar Pruebas Unitarias
-        run: |
-          echo "Ejecutando pruebas unitarias en entorno controlado..."
-          # docker compose run --rm backend npm test
-
-      - name: Reportar Estado Final
-        if: success()
-        run: |
-          echo "Pipeline completado con éxito."
-          docker ps
+            # Bajar contenedores viejos y levantar los nuevos
+            docker compose down
+            docker compose up --build -d
