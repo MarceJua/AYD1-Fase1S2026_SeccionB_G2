@@ -680,7 +680,7 @@ const reporteMedicosMasAtendidos = async (req, res) => {
       SELECT m.nombre, m.apellido, COUNT(c.id) AS total_citas
       FROM medicos m
       JOIN citas c ON m.id = c.medico_id
-      WHERE c.estado = 'completada'
+      WHERE LOWER(c.estado) IN ('atendido', 'completada')
       GROUP BY m.id, m.nombre, m.apellido
       ORDER BY total_citas DESC
       LIMIT 5;
