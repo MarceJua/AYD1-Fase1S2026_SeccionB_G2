@@ -730,6 +730,137 @@ const reporteEspecialidades = async (req, res) => {
   }
 };
 
+const obtenerDenuncias = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        r.id,
+        r.cita_id,
+        r.reportador_rol,
+        r.categoria,
+        r.explicacion,
+        r.fecha_creacion,
+        c.fecha AS fecha_cita,
+        c.estado AS estado_cita,
+        p.id AS paciente_id,
+        p.nombre AS paciente_nombre,
+        p.apellido AS paciente_apellido,
+        m.id AS medico_id,
+        m.nombre AS medico_nombre,
+        m.apellido AS medico_apellido
+      FROM reportes r
+      LEFT JOIN citas c ON r.cita_id = c.id
+      LEFT JOIN pacientes p ON c.paciente_id = p.id
+      LEFT JOIN medicos m ON c.medico_id = m.id
+      ORDER BY r.fecha_creacion DESC
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error obteniendo denuncias:", error);
+    res.status(500).json({ error: "Error al obtener las denuncias" });
+  }
+};
+
+const obtenerPromediosCalificaciones = async (req, res) => {
+  try {
+    const [estrellasResult, medicosResult, pacientesResult] = await Promise.all(
+      [
+        pool.query(`
+        SELECT estrellas, COUNT(*)::int AS total
+        FROM calificaciones
+        GROUP BY estrellas
+        ORDER BY estrellas DESC
+      `),
+        pool.query(`
+        SELECT
+          m.id,
+          m.nombre,
+          m.apellido,
+          m.especialidad,
+          ROUND(AVG(cal.estrellas)::numeric, 1) AS promedio,
+          COUNT(cal.id)::int AS total_evaluaciones
+        FROM medicos m
+        LEFT JOIN citas c ON m.id = c.medico_id
+        LEFT JOIN calificaciones cal ON c.id = cal.cita_id AND cal.evaluador_rol = 'paciente'
+        WHERE m.estado = 'aprobado'
+        GROUP BY m.id, m.nombre, m.apellido, m.especialidad
+        HAVING COUNT(cal.id) > 0
+        ORDER BY promedio DESC
+      `),
+        pool.query(`
+        SELECT
+          p.id,
+          p.nombre,
+          p.apellido,
+          ROUND(AVG(cal.estrellas)::numeric, 1) AS promedio,
+          COUNT(cal.id)::int AS total_evaluaciones
+        FROM pacientes p
+        LEFT JOIN citas c ON p.id = c.paciente_id
+        LEFT JOIN calificaciones cal ON c.id = cal.cita_id AND cal.evaluador_rol = 'medico'
+        WHERE p.estado = 'aprobado'
+        GROUP BY p.id, p.nombre, p.apellido
+        HAVING COUNT(cal.id) > 0
+        ORDER BY promedio DESC
+      `),
+      ],
+    );
+
+    res.json({
+      estrellas: estrellasResult.rows,
+      medicos: medicosResult.rows,
+      pacientes: pacientesResult.rows,
+    });
+  } catch (error) {
+    console.error("Error obteniendo promedios:", error);
+    res
+      .status(500)
+      .json({ error: "Error al obtener promedios de calificaciones" });
+  }
+};
+
+const obtenerGraficoHorarios = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        dia AS franja_horaria,
+        COUNT(*)::int AS total_citas
+      FROM horario_medico hm
+      CROSS JOIN LATERAL unnest(hm.dias) AS dia
+      GROUP BY dia
+      ORDER BY total_citas DESC, dia ASC
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error obteniendo gráfico de horarios:", error);
+    res.status(500).json({ error: "Error al generar datos de horarios" });
+  }
+};
+
+const obtenerGraficoCancelaciones = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        estado AS especialidad,
+        COUNT(*)::int AS total_canceladas
+      FROM citas
+      WHERE estado IN ('cancelada', 'Atendido')
+      GROUP BY estado
+      ORDER BY CASE
+        WHEN estado = 'cancelada' THEN 1
+        WHEN estado = 'Atendido' THEN 2
+        ELSE 3
+      END
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error obteniendo gráfico de cancelaciones:", error);
+    res.status(500).json({ error: "Error al generar datos de cancelaciones" });
+  }
+};
+
 // Modificación de usuarios para el Administrador
 
 // Pacientes
@@ -847,6 +978,10 @@ module.exports = {
   darBajaPaciente,
   reporteMedicosMasAtendidos,
   reporteEspecialidades,
+  obtenerDenuncias,
+  obtenerPromediosCalificaciones,
+  obtenerGraficoHorarios,
+  obtenerGraficoCancelaciones,
   actualizarPacienteAdmin,
   actualizarMedicoAdmin,
 };

@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import Chart from "chart.js/auto";
 import "../styles/AdminDashboard.css";
 
+const API_URL = import.meta.env.VITE_API_URL;
+const BASE_URL = API_URL?.replace("/api", "");
+
 Chart.defaults.color = "#ffffff";
 Chart.defaults.borderColor = "rgba(255, 255, 255, 0.1)";
 
@@ -44,6 +47,11 @@ const AdminDashboard = () => {
 
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
+      const jsonIfOk = async (response) => {
+        if (!response.ok) return null;
+        return response.json();
+      };
+
       // Se obtienen todos los datos en paralelo para mayor rapidez
       const [
         resMedPend,
@@ -57,46 +65,54 @@ const AdminDashboard = () => {
         resHorarios,
         resCancelaciones,
       ] = await Promise.all([
-        fetch(
-          "http://localhost:5000/api/auth/admin/medicos-pendientes",
-          config,
-        ),
-        fetch(
-          "http://localhost:5000/api/auth/admin/pacientes-pendientes",
-          config,
-        ),
-        fetch("http://localhost:5000/api/auth/admin/medicos-aprobados", config),
-        fetch(
-          "http://localhost:5000/api/auth/admin/pacientes-aprobados",
-          config,
-        ),
-        fetch("http://localhost:5000/api/auth/admin/medicos-top", config),
-        fetch("http://localhost:5000/api/auth/admin/especialidades", config),
-        fetch("http://localhost:5000/api/auth/admin/denuncias", config),
-        fetch(
-          "http://localhost:5000/api/auth/admin/calificaciones-promedios",
-          config,
-        ),
-        fetch("http://localhost:5000/api/auth/admin/grafico-horarios", config),
-        fetch(
-          "http://localhost:5000/api/auth/admin/grafico-cancelaciones",
-          config,
-        ),
+        fetch(`${API_URL}/auth/admin/medicos-pendientes`, config),
+        fetch(`${API_URL}/auth/admin/pacientes-pendientes`, config),
+        fetch(`${API_URL}/auth/admin/medicos-aprobados`, config),
+        fetch(`${API_URL}/auth/admin/pacientes-aprobados`, config),
+        fetch(`${API_URL}/auth/admin/medicos-top`, config),
+        fetch(`${API_URL}/auth/admin/especialidades`, config),
+        fetch(`${API_URL}/auth/admin/denuncias`, config),
+        fetch(`${API_URL}/auth/admin/calificaciones-promedios`, config),
+        fetch(`${API_URL}/auth/admin/grafico-horarios`, config),
+        fetch(`${API_URL}/auth/admin/grafico-cancelaciones`, config),
       ]);
 
-      if (resMedPend.ok) setMedicos(await resMedPend.json());
-      if (resPacPend.ok) setPacientes(await resPacPend.json());
-      if (resMedApro.ok) setMedicosAprobados(await resMedApro.json());
-      if (resPacApro.ok) setPacientesAprobados(await resPacApro.json());
+      const [
+        medPendData,
+        pacPendData,
+        medAproData,
+        pacAproData,
+        topMedData,
+        topEspData,
+        denunciasData,
+        promediosData,
+        horariosData,
+        cancelacionesData,
+      ] = await Promise.all([
+        jsonIfOk(resMedPend),
+        jsonIfOk(resPacPend),
+        jsonIfOk(resMedApro),
+        jsonIfOk(resPacApro),
+        jsonIfOk(resTopMed),
+        jsonIfOk(resTopEsp),
+        jsonIfOk(resDenuncias),
+        jsonIfOk(resPromedios),
+        jsonIfOk(resHorarios),
+        jsonIfOk(resCancelaciones),
+      ]);
 
-      if (resTopMed.ok) setReporteMedicos(await resTopMed.json());
-      if (resTopEsp.ok) setReporteEspecialidades(await resTopEsp.json());
+      if (medPendData) setMedicos(medPendData);
+      if (pacPendData) setPacientes(pacPendData);
+      if (medAproData) setMedicosAprobados(medAproData);
+      if (pacAproData) setPacientesAprobados(pacAproData);
 
-      if (resDenuncias.ok) setDenuncias(await resDenuncias.json());
-      if (resPromedios.ok) setPromedios(await resPromedios.json());
-      if (resHorarios.ok) setGraficoHorarios(await resHorarios.json());
-      if (resCancelaciones.ok)
-        setGraficoCancelaciones(await resCancelaciones.json());
+      if (topMedData) setReporteMedicos(topMedData);
+      if (topEspData) setReporteEspecialidades(topEspData);
+
+      if (denunciasData) setDenuncias(denunciasData);
+      if (promediosData) setPromedios(promediosData);
+      if (horariosData) setGraficoHorarios(horariosData);
+      if (cancelacionesData) setGraficoCancelaciones(cancelacionesData);
     } catch (error) {
       console.error("Error de red:", error);
     }
@@ -215,13 +231,13 @@ const AdminDashboard = () => {
   const getPdfUrl = (rutaPdf) => {
     if (!rutaPdf) return null;
     const nombreArchivo = rutaPdf.split("\\").pop().split("/").pop();
-    return `http://localhost:5000/uploads/${nombreArchivo}`;
+    return `${BASE_URL}/uploads/${nombreArchivo}`;
   };
 
   const getImageUrl = (rutaFoto) => {
     if (!rutaFoto) return "https://via.placeholder.com/50";
     const nombreArchivo = rutaFoto.split("\\").pop().split("/").pop();
-    return `http://localhost:5000/uploads/${nombreArchivo}`;
+    return `${BASE_URL}/uploads/${nombreArchivo}`;
   };
 
   const handleDarDeBaja = async (tipo, id) => {
@@ -234,7 +250,7 @@ const AdminDashboard = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:5000/api/auth/admin/baja-${tipo}/${id}`,
+        `${API_URL}/auth/admin/baja-${tipo}/${id}`,
         {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
@@ -261,7 +277,7 @@ const AdminDashboard = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:5000/api/auth/admin/${accion}-${tipo}/${id}`,
+        `${API_URL}/auth/admin/${accion}-${tipo}/${id}`,
         {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
@@ -283,8 +299,8 @@ const AdminDashboard = () => {
       const token = localStorage.getItem("token");
       const endpoint =
         tipoEdicion === "paciente"
-          ? `http://localhost:5000/api/auth/admin/actualizar-paciente/${seleccionado.id}`
-          : `http://localhost:5000/api/auth/admin/actualizar-medico/${seleccionado.id}`;
+          ? `${API_URL}/auth/admin/actualizar-paciente/${seleccionado.id}`
+          : `${API_URL}/auth/admin/actualizar-medico/${seleccionado.id}`;
 
       const response = await fetch(endpoint, {
         method: "PUT",
@@ -316,7 +332,7 @@ const AdminDashboard = () => {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:5000/api/auth/admin/denuncias/${id}`,
+        `${API_URL}/auth/admin/denuncias/${id}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
@@ -339,7 +355,7 @@ const AdminDashboard = () => {
           className="btn-logout"
           onClick={() => {
             localStorage.removeItem("token");
-              navigate("/demo");
+            navigate("/demo");
           }}
         >
           Cerrar Sesión
