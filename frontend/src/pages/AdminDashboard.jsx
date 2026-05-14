@@ -390,10 +390,9 @@ const AdminDashboard = () => {
           onClick={() => setVistaActiva("usuarios")}
           style={{
             padding: "10px",
-            backgroundColor:
-              vistaActiva === "usuarios" ? "#0056b3" : "transparent",
-            color: vistaActiva === "usuarios" ? "white" : "#ccc",
-            border: "none",
+            backgroundColor: vistaActiva === "usuarios" ? "#0056b3" : "#f8f9fa",
+            color: vistaActiva === "usuarios" ? "white" : "#495057",
+            border: "1px solid #dee2e6",
             borderRadius: "5px",
             cursor: "pointer",
             fontWeight: "bold",
@@ -405,10 +404,9 @@ const AdminDashboard = () => {
           onClick={() => setVistaActiva("denuncias")}
           style={{
             padding: "10px",
-            backgroundColor:
-              vistaActiva === "denuncias" ? "#dc3545" : "transparent",
-            color: vistaActiva === "denuncias" ? "white" : "#ccc",
-            border: "none",
+            backgroundColor: vistaActiva === "denuncias" ? "#dc3545" : "#f8f9fa",
+            color: vistaActiva === "denuncias" ? "white" : "#495057",
+            border: "1px solid #dee2e6",
             borderRadius: "5px",
             cursor: "pointer",
             fontWeight: "bold",
@@ -420,10 +418,9 @@ const AdminDashboard = () => {
           onClick={() => setVistaActiva("graficos")}
           style={{
             padding: "10px",
-            backgroundColor:
-              vistaActiva === "graficos" ? "#28a745" : "transparent",
-            color: vistaActiva === "graficos" ? "white" : "#ccc",
-            border: "none",
+            backgroundColor: vistaActiva === "graficos" ? "#28a745" : "#f8f9fa",
+            color: vistaActiva === "graficos" ? "white" : "#495057",
+            border: "1px solid #dee2e6",
             borderRadius: "5px",
             cursor: "pointer",
             fontWeight: "bold",
