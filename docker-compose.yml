@@ -5,6 +5,7 @@ services:
   db:
     image: postgres:15-alpine
     container_name: saludplus_db
+    restart: always
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -20,6 +21,7 @@ services:
     build: 
       context: ./backend
     container_name: saludplus_backend
+    restart: always
     ports:
       - "5000:5000"
     environment:
@@ -44,6 +46,7 @@ services:
     build: 
       context: ./frontend
     container_name: saludplus_frontend
+    restart: always
     ports:
       - "5173:5173"
     environment:
