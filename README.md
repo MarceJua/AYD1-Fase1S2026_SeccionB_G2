@@ -2,6 +2,37 @@
 
 [![SaludPlus Backend CI/CD](https://github.com/MarceJua/AYD1-Fase1S2026_SeccionB_G2/actions/workflows/main.yml/badge.svg?branch=develop)](https://github.com/MarceJua/AYD1-Fase1S2026_SeccionB_G2/actions/workflows/main.yml)
 
+## Arquitectura Cloud y Despliegue en Producción
+
+El proyecto cuenta con un entorno de **Demostración Interactiva** alojado en la nube, diseñado bajo principios de la cultura DevOps, alta disponibilidad y seguridad automatizada.
+
+El sitio está desplegado en un entorno Linux (Ubuntu) utilizando **DigitalOcean** y orquestado 100% con contenedores.
+
+### Stack de Infraestructura
+
+- **Cloud Provider:** DigitalOcean (VPS Droplet).
+- **Contenedores:** Docker & Docker Compose (Servicios aislados para Frontend, Backend y PostgreSQL).
+- **Reverse Proxy:** Nginx para la gestión del tráfico y enrutamiento interno.
+- **Seguridad SSL:** Certificados automáticos gestionados con Let's Encrypt.
+- **CI/CD:** Despliegue continuo mediante **GitHub Actions**. Cualquier cambio en la rama `main` se compila y despliega automáticamente en el servidor.
+
+### 🛡️ Seguridad Implementada
+
+Para garantizar la integridad del entorno público, se aplicaron múltiples capas de seguridad:
+
+1. **Aislamiento de Red (Docker):** La base de datos PostgreSQL se comunica con el backend a través de una red interna de Docker (`app_network`). El puerto `5432` no está expuesto a internet.
+2. **Nginx Rate Limiting:** Implementación de un límite de peticiones (5 r/s con ráfagas controladas) en la API para mitigar ataques de fuerza bruta.
+3. **Fail2Ban:** Monitoreo activo de logs. Bloqueo automático (ban) a nivel de sistema operativo para direcciones IP maliciosas que exceden los límites de peticiones HTTP/HTTPS o intentos fallidos de SSH.
+4. **Firewall (UFW):** Restricción estricta de puertos, permitiendo únicamente tráfico SSH, HTTP y HTTPS.
+
+### ♻️ Automatización de Entorno (Demo Autónoma)
+
+Dado que el proyecto funciona como un portafolio público, se implementó un mecanismo para mantener los datos limpios y consistentes:
+
+- **Cronjob de Sistema:** Un script en bash se ejecuta todos los días a las **3:00 AM (CST)**.
+- **Proceso:** El script destruye los volúmenes actuales de Docker (`docker compose down -v`) y vuelve a levantar la infraestructura (`docker compose up -d`).
+- **Resultado:** La base de datos es purgada de los datos ingresados por visitantes en el día y se repuebla automáticamente con el archivo `init.sql`, garantizando una experiencia de demostración impecable cada mañana.
+
 ## HU-001: Registro e Inicio de Sesión de Paciente
 
 ### Comandos utilizados:
@@ -24,10 +55,10 @@ npm install bcryptjs jsonwebtoken
 # HU-004 Resumen de Acciones Realizadas
 
 ## 1. Registro y accesos para usuario administrador
-* **Creación de Tabla:** Se diseñó y ejecutó el script SQL para la tabla `administradores`, incluyendo campos específicos:
-    * `usuario, contrasenia
-* **Validacion y seguridad:** Se implementaron validaciones para el registro y login de usuarios administradores. incluyendo un sistema de autenticacion y validacion de password encriptado mediante un archivo txt.
 
+- **Creación de Tabla:** Se diseñó y ejecutó el script SQL para la tabla `administradores`, incluyendo campos específicos:
+  - `usuario, contrasenia
+- **Validacion y seguridad:** Se implementaron validaciones para el registro y login de usuarios administradores. incluyendo un sistema de autenticacion y validacion de password encriptado mediante un archivo txt.
 
 ---
 
@@ -53,98 +84,107 @@ npm install bcryptjs jsonwebtoken
 
 ## Problemas Arreglados (Bugs & Fixes)
 
-| Problema | Causa Raíz | Solución Aplicada |
-| :--- | :--- | :--- |
-| **Página en blanco** | Referencias a `Link` no importadas. | Importación de `react-router-dom` y limpieza de caché de Vite. |
-| **Error de Crypto** | Versión de Node antigua en Docker. | Actualización de imagen base y limpieza de volúmenes. |
-| **ReferenceError** | `loginMedico` no exportado. | Se agregó al `module.exports` del controlador. |
-| **ERR_CONNECTION_REFUSED** | Errores de sintaxis en el Backend. | Depuración de logs y reinicio de contenedores. |
-| **Relation "medicos" does not exist** | Tabla no creada tras limpiar Docker. | Automatización mediante `init.sql`. |
-| **Fotos no guardadas** | Rutas relativas conflictivas. | Uso de `path.join(__dirname, ...)` y mapeo de volúmenes. |
+| Problema                              | Causa Raíz                           | Solución Aplicada                                              |
+| :------------------------------------ | :----------------------------------- | :------------------------------------------------------------- |
+| **Página en blanco**                  | Referencias a `Link` no importadas.  | Importación de `react-router-dom` y limpieza de caché de Vite. |
+| **Error de Crypto**                   | Versión de Node antigua en Docker.   | Actualización de imagen base y limpieza de volúmenes.          |
+| **ReferenceError**                    | `loginMedico` no exportado.          | Se agregó al `module.exports` del controlador.                 |
+| **ERR_CONNECTION_REFUSED**            | Errores de sintaxis en el Backend.   | Depuración de logs y reinicio de contenedores.                 |
+| **Relation "medicos" does not exist** | Tabla no creada tras limpiar Docker. | Automatización mediante `init.sql`.                            |
+| **Fotos no guardadas**                | Rutas relativas conflictivas.        | Uso de `path.join(__dirname, ...)` y mapeo de volúmenes.       |
 
 ---
 
 # HU-009 Resumen de Acciones Realizadas
 
 ## 1. Base de Datos (Persistencia)
-* **Creación de Tablas:** Se agregaron dos tablas nuevas al script `database/init.sql`:
-    * `citas`: almacena citas médicas con campos `medico_id`, `paciente_id`, `fecha`, `hora` y `estado`.
-    * `horario_medico`: almacena el horario de cada médico con `medico_id` (UNIQUE), `dias` (TEXT[]), `hora_inicio` y `hora_fin`. La restricción UNIQUE garantiza que cada médico tenga exactamente un horario.
+
+- **Creación de Tablas:** Se agregaron dos tablas nuevas al script `database/init.sql`:
+  - `citas`: almacena citas médicas con campos `medico_id`, `paciente_id`, `fecha`, `hora` y `estado`.
+  - `horario_medico`: almacena el horario de cada médico con `medico_id` (UNIQUE), `dias` (TEXT[]), `hora_inicio` y `hora_fin`. La restricción UNIQUE garantiza que cada médico tenga exactamente un horario.
 
 ---
 
 ## 2. Backend (Lógica de Negocio)
-* **Middleware de Autenticación:** Se creó `verifyMedicoToken.js` para proteger los endpoints del médico, validando el JWT con rol `'medico'`.
-* **Controlador de Horarios (`horarioController.js`):**
-    * `obtenerHorario`: Retorna el horario actual del médico o `null` si aún no tiene uno configurado.
-    * `guardarHorario`: Inserta el horario por primera vez. Retorna 409 si ya existe.
-    * `actualizarHorario`: Actualiza el horario con validación crítica — si hay citas activas/pendientes fuera del nuevo rango horario, **no se permite la actualización** y se devuelven las citas conflictivas.
-* **Rutas de API (`medicoRoutes.js`):** Se registraron tres endpoints bajo `/api/medico/horarios`:
-    * `GET /api/medico/horarios` → obtener horario actual
-    * `POST /api/medico/horarios` → guardar horario por primera vez
-    * `PUT /api/medico/horarios` → actualizar horario (con validación de citas)
+
+- **Middleware de Autenticación:** Se creó `verifyMedicoToken.js` para proteger los endpoints del médico, validando el JWT con rol `'medico'`.
+- **Controlador de Horarios (`horarioController.js`):**
+  - `obtenerHorario`: Retorna el horario actual del médico o `null` si aún no tiene uno configurado.
+  - `guardarHorario`: Inserta el horario por primera vez. Retorna 409 si ya existe.
+  - `actualizarHorario`: Actualiza el horario con validación crítica — si hay citas activas/pendientes fuera del nuevo rango horario, **no se permite la actualización** y se devuelven las citas conflictivas.
+- **Rutas de API (`medicoRoutes.js`):** Se registraron tres endpoints bajo `/api/medico/horarios`:
+  - `GET /api/medico/horarios` → obtener horario actual
+  - `POST /api/medico/horarios` → guardar horario por primera vez
+  - `PUT /api/medico/horarios` → actualizar horario (con validación de citas)
 
 ---
 
 ## 3. Frontend (Interfaz de Usuario)
-* **Componente Creado:**
-    * `HorarioMedico.jsx`: Vista con checkboxes para seleccionar días (Lunes–Domingo), inputs `type="time"` para hora inicio y fin, y botón dinámico que muestra **"Guardar horario"** si es la primera vez o **"Actualizar horario"** si ya existe un horario. Muestra la lista de citas conflictivas si el backend responde 409.
-* **Navegación:** Se registró la ruta `/horario-medico` en `App.jsx` y se corrigió el redirect del login del médico para apuntar a esta vista en lugar del dashboard del paciente.
+
+- **Componente Creado:**
+  - `HorarioMedico.jsx`: Vista con checkboxes para seleccionar días (Lunes–Domingo), inputs `type="time"` para hora inicio y fin, y botón dinámico que muestra **"Guardar horario"** si es la primera vez o **"Actualizar horario"** si ya existe un horario. Muestra la lista de citas conflictivas si el backend responde 409.
+- **Navegación:** Se registró la ruta `/horario-medico` en `App.jsx` y se corrigió el redirect del login del médico para apuntar a esta vista en lugar del dashboard del paciente.
 
 ---
 
 # HU-013 Resumen de Acciones Realizadas
 
 ## 1. Base de Datos (Persistencia)
-* **Sin cambios de esquema:** Se reutilizó la tabla `medicos` definida en `database/init.sql`. Los campos requeridos por la historia (`nombre`, `apellido`, `dpi`, `fecha_nacimiento`, `genero`, `direccion`, `telefono`, `foto`, `numero_colegiado`, `especialidad`, `direccion_clinica`, `correo`) ya estaban presentes.
+
+- **Sin cambios de esquema:** Se reutilizó la tabla `medicos` definida en `database/init.sql`. Los campos requeridos por la historia (`nombre`, `apellido`, `dpi`, `fecha_nacimiento`, `genero`, `direccion`, `telefono`, `foto`, `numero_colegiado`, `especialidad`, `direccion_clinica`, `correo`) ya estaban presentes.
 
 ---
 
 ## 2. Backend (Lógica de Negocio)
-* **Controlador de Perfil (`perfilMedicoController.js`):**
-    * `obtenerPerfilMedico`: Retorna todos los campos del médico autenticado (excluye contraseña). Usa el `id` extraído del JWT por el middleware.
-    * `actualizarPerfilMedico`: Actualiza todos los campos editables. El campo `correo` es ignorado aunque se envíe en el cuerpo. Si se adjunta una nueva fotografía, elimina la anterior del disco y almacena la nueva.
-* **Rutas de API (`medicoRoutes.js`):** Se registraron dos endpoints nuevos bajo `/api/medico/perfil`, ambos protegidos con `verifyMedicoToken`:
-    * `GET /api/medico/perfil` → obtener perfil del médico autenticado
-    * `PUT /api/medico/perfil` → actualizar perfil (foto opcional vía `multipart/form-data`)
-* **Validaciones:** Unicidad de `dpi` y `numero_colegiado` manejada por restricciones de la base de datos; retorna error 400 con mensaje descriptivo si se detecta colisión.
+
+- **Controlador de Perfil (`perfilMedicoController.js`):**
+  - `obtenerPerfilMedico`: Retorna todos los campos del médico autenticado (excluye contraseña). Usa el `id` extraído del JWT por el middleware.
+  - `actualizarPerfilMedico`: Actualiza todos los campos editables. El campo `correo` es ignorado aunque se envíe en el cuerpo. Si se adjunta una nueva fotografía, elimina la anterior del disco y almacena la nueva.
+- **Rutas de API (`medicoRoutes.js`):** Se registraron dos endpoints nuevos bajo `/api/medico/perfil`, ambos protegidos con `verifyMedicoToken`:
+  - `GET /api/medico/perfil` → obtener perfil del médico autenticado
+  - `PUT /api/medico/perfil` → actualizar perfil (foto opcional vía `multipart/form-data`)
+- **Validaciones:** Unicidad de `dpi` y `numero_colegiado` manejada por restricciones de la base de datos; retorna error 400 con mensaje descriptivo si se detecta colisión.
 
 ---
 
 ## 3. Frontend (Interfaz de Usuario)
-* **Componente Creado:**
-    * `PerfilMedico.jsx`: Formulario con todos los campos del médico precargados desde `GET /api/medico/perfil`. El campo `correo` se muestra deshabilitado (solo lectura). Incluye previsualización de fotografía actual y selector para reemplazarla. Muestra mensajes de éxito o error según la respuesta del backend.
-* **Flujo de Navegación Actualizado:**
-    * `LoginMedico.jsx`: Tras el login exitoso, consulta `GET /api/medico/horarios`. Si el médico ya tiene horario configurado, redirige directamente a `/perfil-medico`; si no, redirige a `/horario-medico`.
-    * `HorarioMedico.jsx`: Al guardar o actualizar el horario exitosamente, redirige automáticamente a `/perfil-medico` tras 1.5 segundos.
-    * `PerfilMedico.jsx`: Incluye botón **"Editar Horario Medico"** que navega a `/horario-medico` y botón **"Cerrar Sesion"** que limpia el token del `localStorage` y redirige a `/login-medico`.
-* **Ruta registrada:** `/perfil-medico` añadida en `App.jsx`.
+
+- **Componente Creado:**
+  - `PerfilMedico.jsx`: Formulario con todos los campos del médico precargados desde `GET /api/medico/perfil`. El campo `correo` se muestra deshabilitado (solo lectura). Incluye previsualización de fotografía actual y selector para reemplazarla. Muestra mensajes de éxito o error según la respuesta del backend.
+- **Flujo de Navegación Actualizado:**
+  - `LoginMedico.jsx`: Tras el login exitoso, consulta `GET /api/medico/horarios`. Si el médico ya tiene horario configurado, redirige directamente a `/perfil-medico`; si no, redirige a `/horario-medico`.
+  - `HorarioMedico.jsx`: Al guardar o actualizar el horario exitosamente, redirige automáticamente a `/perfil-medico` tras 1.5 segundos.
+  - `PerfilMedico.jsx`: Incluye botón **"Editar Horario Medico"** que navega a `/horario-medico` y botón **"Cerrar Sesion"** que limpia el token del `localStorage` y redirige a `/login-medico`.
+- **Ruta registrada:** `/perfil-medico` añadida en `App.jsx`.
 
 ---
 
 # HU-018 Resumen de Acciones Realizadas
 
 ## 1. Base de Datos (Persistencia)
-* **Sin cambios de esquema:** Se reutilizaron las tablas `horario_medico` y `citas` ya existentes. La consulta de slots ocupa los campos `medico_id`, `dias`, `hora_inicio`, `hora_fin` (de `horario_medico`) y `fecha`, `hora`, `estado` (de `citas`).
+
+- **Sin cambios de esquema:** Se reutilizaron las tablas `horario_medico` y `citas` ya existentes. La consulta de slots ocupa los campos `medico_id`, `dias`, `hora_inicio`, `hora_fin` (de `horario_medico`) y `fecha`, `hora`, `estado` (de `citas`).
 
 ---
 
 ## 2. Backend (Lógica de Negocio)
-* **Nuevo endpoint en `pacienteRoutes.js`:**
-    * `GET /api/paciente/medicos/:id/horario` — Retorna el horario configurado del médico (días y rango horario). Si se proporciona el query param `?fecha=YYYY-MM-DD`, determina si el médico atiende ese día de la semana y genera los slots horarios (intervalos de 1 hora entre `hora_inicio` y `hora_fin`), marcando cada uno como disponible u ocupado según las citas activas existentes en esa fecha.
-* **Lógica de slots:** La generación de slots recorre minuto a minuto en saltos de 60, desde `hora_inicio` (inclusive) hasta `hora_fin` (exclusive), comparando cada franja con las horas de citas activas del médico para esa fecha.
-* **Validación de día:** Se usa `Date.getUTCDay()` con la fecha en formato `T12:00:00` para evitar desplazamientos de zona horaria al determinar el día de la semana.
+
+- **Nuevo endpoint en `pacienteRoutes.js`:**
+  - `GET /api/paciente/medicos/:id/horario` — Retorna el horario configurado del médico (días y rango horario). Si se proporciona el query param `?fecha=YYYY-MM-DD`, determina si el médico atiende ese día de la semana y genera los slots horarios (intervalos de 1 hora entre `hora_inicio` y `hora_fin`), marcando cada uno como disponible u ocupado según las citas activas existentes en esa fecha.
+- **Lógica de slots:** La generación de slots recorre minuto a minuto en saltos de 60, desde `hora_inicio` (inclusive) hasta `hora_fin` (exclusive), comparando cada franja con las horas de citas activas del médico para esa fecha.
+- **Validación de día:** Se usa `Date.getUTCDay()` con la fecha en formato `T12:00:00` para evitar desplazamientos de zona horaria al determinar el día de la semana.
 
 ---
 
 ## 3. Frontend (Interfaz de Usuario)
-* **Componente modificado:**
-    * `DashboardPaciente.jsx`: Se agregó el botón **"Ver Horario"** en cada tarjeta de médico (independiente del botón "Programar Cita"). Al hacer clic abre un modal con:
-        * Nombre y especialidad del médico.
-        * Días de atención y rango horario configurado.
-        * Selector de fecha para filtrar disponibilidad.
-        * Grilla de slots con código de color: verde (Libre) y rojo (Ocupado).
-        * Mensaje de advertencia si el médico no atiende el día seleccionado.
-        * Si el médico no tiene horario configurado, el modal muestra únicamente el mensaje informativo y el botón **"Cerrar"** (sin opción de programar cita).
-        * Si el médico sí tiene horario, el modal incluye el botón **"Programar Cita"** que cierra el modal de horario y abre directamente el modal de agendamiento (HU-008).
-* **Estilos agregados en `Dashboard.css`:** Clases para el modal ampliado (`.modal-horario`), la grilla de slots (`.slots-grid`, `.slot`, `.slot-disponible`, `.slot-ocupado`), la leyenda visual, el mensaje de día no laborable (`.horario-no-atiende`) y los botones por tarjeta (`.card-buttons`, `.btn-horario`).
+
+- **Componente modificado:**
+  - `DashboardPaciente.jsx`: Se agregó el botón **"Ver Horario"** en cada tarjeta de médico (independiente del botón "Programar Cita"). Al hacer clic abre un modal con:
+    - Nombre y especialidad del médico.
+    - Días de atención y rango horario configurado.
+    - Selector de fecha para filtrar disponibilidad.
+    - Grilla de slots con código de color: verde (Libre) y rojo (Ocupado).
+    - Mensaje de advertencia si el médico no atiende el día seleccionado.
+    - Si el médico no tiene horario configurado, el modal muestra únicamente el mensaje informativo y el botón **"Cerrar"** (sin opción de programar cita).
+    - Si el médico sí tiene horario, el modal incluye el botón **"Programar Cita"** que cierra el modal de horario y abre directamente el modal de agendamiento (HU-008).
+- **Estilos agregados en `Dashboard.css`:** Clases para el modal ampliado (`.modal-horario`), la grilla de slots (`.slots-grid`, `.slot`, `.slot-disponible`, `.slot-ocupado`), la leyenda visual, el mensaje de día no laborable (`.horario-no-atiende`) y los botones por tarjeta (`.card-buttons`, `.btn-horario`).
