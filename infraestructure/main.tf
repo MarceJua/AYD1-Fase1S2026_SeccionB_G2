@@ -43,3 +43,41 @@ resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_all" {
   start_ip_address = "0.0.0.0"
   end_ip_address   = "255.255.255.255"
 }
+
+# 6. APP SERVICE PLAN (F1 Free Tier)
+resource "azurerm_service_plan" "plan" {
+  name                = "plan-saludplus-f1"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  os_type             = "Linux"
+  sku_name            = "F1" 
+}
+
+# 7. WEB APP FOR CONTAINERS
+resource "azurerm_linux_web_app" "backend" {
+  name                = "backend-saludplus-789" # Único
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_service_plan.plan.location
+  service_plan_id     = azurerm_service_plan.plan.id
+
+  site_config {
+    always_on = false
+    application_stack {
+      docker_image_name = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+    }
+  }
+
+  app_settings = {
+    "PORT"        = "5000"
+    "DB_USER"     = azurerm_postgresql_flexible_server.db_server.administrator_login
+    "DB_PASSWORD" = azurerm_postgresql_flexible_server.db_server.administrator_password
+    "DB_HOST"     = azurerm_postgresql_flexible_server.db_server.fqdn
+    "DB_PORT"     = "5432"
+    "DB_NAME"     = azurerm_postgresql_flexible_server_database.db.name
+  }
+}
+
+# 9. OUTPUTS (Para que Terraform nos proporcione la URL al terminar)
+output "backend_url" {
+  value = "https://${azurerm_linux_web_app.backend.default_hostname}"
+}
