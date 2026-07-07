@@ -2,17 +2,17 @@
 # Todos los recursos de este proyecto vivirán aquí.
 resource "azurerm_resource_group" "rg" {
   name     = "rg-saludplus-demo"
-  location = "East US"
+  location = "westus3"
 }
 
 # 2. SERVIDOR POSTGRESQL (Capa Gratuita B1ms)
 resource "azurerm_postgresql_flexible_server" "db_server" {
-  name                   = "saludplus-db-server-123" # Este nombre DEBE ser único en todo Azure, puedes cambiar el "123" por cualquier número aleatorio.
+  name                   = "saludplus-db-server-357" # Este nombre DEBE ser único
   resource_group_name    = azurerm_resource_group.rg.name
   location               = azurerm_resource_group.rg.location
-  version                = "15" # Mantenemos la misma versión 15 que usabas en tus contenedores locales
+  version                = "15" # Mantenemos la misma versión 15
   administrator_login    = "saludadmin"
-  administrator_password = "PasswordSeguro2026!" # Usa una contraseña fuerte
+  administrator_password = "PasswordSeguro2026!" # contraseña fuerte
   zone                   = "1"
   
   # ¡CRÍTICO! Este es el SKU y almacenamiento exacto para mantener el costo en $0 (Estudiantes)
@@ -34,4 +34,12 @@ resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure" {
   server_id        = azurerm_postgresql_flexible_server.db_server.id
   start_ip_address = "0.0.0.0"
   end_ip_address   = "0.0.0.0"
+}
+
+# 5. REGLA DE FIREWALL (Permitir conexión desde internet/local)
+resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_all" {
+  name             = "AllowAllIPs"
+  server_id        = azurerm_postgresql_flexible_server.db_server.id
+  start_ip_address = "0.0.0.0"
+  end_ip_address   = "255.255.255.255"
 }
