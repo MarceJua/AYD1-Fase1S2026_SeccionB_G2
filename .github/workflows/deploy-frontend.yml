@@ -1,0 +1,32 @@
+name: Deploy Frontend to Azure Static Web Apps
+
+on:
+  push:
+    branches:
+      - feature/azure-migration
+    paths:
+      - "frontend/**"
+      - ".github/workflows/deploy-frontend.yml"
+
+jobs:
+  build_and_deploy_job:
+    runs-on: ubuntu-latest
+    name: Build and Deploy Frontend
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Compilar y Desplegar en Azure
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "/frontend" # La carpeta donde está package.json
+          api_location: "" # Lo dejamos vacío porque el backend está separado
+          output_location: "dist" # La carpeta que genera Vite al compilar
+        env:
+          # Inyectamos la URL del backend para que Vite la use al compilar
+          VITE_API_URL: "https://backend-saludplus-789.azurewebsites.net/api"

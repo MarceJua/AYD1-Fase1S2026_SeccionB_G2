@@ -63,7 +63,7 @@ resource "azurerm_linux_web_app" "backend" {
   site_config {
     always_on = false
     application_stack {
-      docker_image_name = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      docker_image_name = "ghcr.io/marcejua/ayd1-fase1s2026_seccionb_g2-backend:latest"
     }
   }
 
@@ -77,7 +77,27 @@ resource "azurerm_linux_web_app" "backend" {
   }
 }
 
-# 9. OUTPUTS (Para que Terraform nos proporcione la URL al terminar)
+# 8. FRONTEND (Azure Static Web Apps - Plan Gratuito)
+resource "azurerm_static_web_app" "frontend" {
+  name                = "frontend-saludplus-demo"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = "eastus2" 
+  sku_tier            = "Free"
+  sku_size            = "Free"
+}
+
+# 9. OUTPUTS DEL FRONTEND
 output "backend_url" {
   value = "https://${azurerm_linux_web_app.backend.default_hostname}"
+}
+
+
+output "frontend_url" {
+  value = "https://${azurerm_static_web_app.frontend.default_host_name}"
+}
+
+# La llave secreta para que GitHub Actions pueda subir el código del frontend
+output "frontend_token" {
+  value     = azurerm_static_web_app.frontend.api_key
+  sensitive = true
 }
