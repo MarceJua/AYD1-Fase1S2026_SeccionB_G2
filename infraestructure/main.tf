@@ -36,14 +36,6 @@ resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure" {
   end_ip_address   = "0.0.0.0"
 }
 
-# 5. REGLA DE FIREWALL (Permitir conexión desde internet/local)
-resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_all" {
-  name             = "AllowAllIPs"
-  server_id        = azurerm_postgresql_flexible_server.db_server.id
-  start_ip_address = "0.0.0.0"
-  end_ip_address   = "255.255.255.255"
-}
-
 # 6. APP SERVICE PLAN (F1 Free Tier)
 resource "azurerm_service_plan" "plan" {
   name                = "plan-saludplus-f1"

@@ -1,0 +1,25 @@
+name: Daily Database Reset
+
+on:
+  schedule:
+    - cron: "0 9 * * *"
+  workflow_dispatch: # Te permite darle clic a un botón "Run" manual para tu demo
+
+jobs:
+  reset-database:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
+
+      - name: Instalar cliente de PostgreSQL
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Ejecutar script de reseteo (init.sql)
+        env:
+          PGPASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+        run: |
+          psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f ./database/init.sql
