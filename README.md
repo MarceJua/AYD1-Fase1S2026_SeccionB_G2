@@ -1,37 +1,39 @@
 # AYD1-Fase2S2026_SeccionB_G2
 
-[![SaludPlus Backend CI/CD](https://github.com/MarceJua/AYD1-Fase1S2026_SeccionB_G2/actions/workflows/main.yml/badge.svg?branch=develop)](https://github.com/MarceJua/AYD1-Fase1S2026_SeccionB_G2/actions/workflows/main.yml)
+[![Backend CI/CD](https://github.com/MarceJua/AYD1-Fase1S2026_SeccionB_G2/actions/workflows/deploy-backend.yml/badge.svg?branch=main)](https://github.com/MarceJua/AYD1-Fase1S2026_SeccionB_G2/actions/workflows/deploy-backend.yml)
+[![Frontend CI/CD](https://github.com/MarceJua/AYD1-Fase1S2026_SeccionB_G2/actions/workflows/deploy-frontend.yml/badge.svg?branch=main)](https://github.com/MarceJua/AYD1-Fase1S2026_SeccionB_G2/actions/workflows/deploy-frontend.yml)
 
 ## Arquitectura Cloud y Despliegue en Producción
 
-El proyecto cuenta con un entorno de **Demostración Interactiva** alojado en la nube, diseñado bajo principios de la cultura DevOps, alta disponibilidad y seguridad automatizada.
+El proyecto cuenta con un entorno de **Demostración Interactiva** alojado en la nube, diseñado bajo principios de la cultura DevOps, Infraestructura como Código (IaC), alta disponibilidad y automatización Serverless.
 
-El sitio está desplegado en un entorno Linux (Ubuntu) utilizando **DigitalOcean** y orquestado 100% con contenedores.
+El ecosistema está desplegado en un entorno **PaaS (Plataforma como Servicio)** utilizando **Microsoft Azure**, abandonando el uso de servidores tradicionales en favor de una arquitectura Cloud Native.
 
-### Stack de Infraestructura
+### ☁️ Stack de Infraestructura
 
-- **Cloud Provider:** DigitalOcean (VPS Droplet).
-- **Contenedores:** Docker & Docker Compose (Servicios aislados para Frontend, Backend y PostgreSQL).
-- **Reverse Proxy:** Nginx para la gestión del tráfico y enrutamiento interno.
-- **Seguridad SSL:** Certificados automáticos gestionados con Let's Encrypt.
-- **CI/CD:** Despliegue continuo mediante **GitHub Actions**. Cualquier cambio en la rama `main` se compila y despliega automáticamente en el servidor.
+- **Cloud Provider:** Microsoft Azure.
+- **Frontend:** Azure Static Web Apps (SWA). Despliegue global a través de CDN con resolución DNS y certificados SSL automáticos.
+- **Backend:** Azure App Service (Linux). Orquestación de contenedores sin servidor, optimizado para escalar bajo demanda (Scale-to-zero model).
+- **Base de Datos:** Azure Database for PostgreSQL Flexible Server. Capa administrada para persistencia de datos.
+- **IaC (Infrastructure as Code):** Todo el entorno en Azure está provisionado de forma declarativa y reproducible utilizando **Terraform**.
+- **CI/CD:** Despliegue continuo desacoplado mediante **GitHub Actions**. La compilación de imágenes Docker se realiza en GitHub Container Registry (GHCR) y se despliega de forma automática en Azure ante cada cambio en la rama `main`.
 
-### 🛡️ Seguridad Implementada
+### 🛡️ Seguridad Implementada (Zero-Trust)
 
-Para garantizar la integridad del entorno público, se aplicaron múltiples capas de seguridad:
+Al migrar a un modelo PaaS, la seguridad se gestiona a nivel de nube y aplicación:
 
-1. **Aislamiento de Red (Docker):** La base de datos PostgreSQL se comunica con el backend a través de una red interna de Docker (`app_network`). El puerto `5432` no está expuesto a internet.
-2. **Nginx Rate Limiting:** Implementación de un límite de peticiones (5 r/s con ráfagas controladas) en la API para mitigar ataques de fuerza bruta.
-3. **Fail2Ban:** Monitoreo activo de logs. Bloqueo automático (ban) a nivel de sistema operativo para direcciones IP maliciosas que exceden los límites de peticiones HTTP/HTTPS o intentos fallidos de SSH.
-4. **Firewall (UFW):** Restricción estricta de puertos, permitiendo únicamente tráfico SSH, HTTP y HTTPS.
+1. **Aislamiento de Red (Firewall):** La base de datos PostgreSQL está configurada con reglas de red estrictas, denegando el tráfico público y permitiendo conexiones de forma exclusiva a los servicios internos de Azure.
+2. **Mitigación DDoS Integrada:** Al no exponer puertos a nivel de sistema operativo, la infraestructura delega la absorción de tráfico malicioso y ataques de fuerza bruta a la red perimetral de Microsoft.
+3. **Control de Peticiones en Aplicación:** Implementación de Rate Limiting directamente en la capa de la API de Express (Node.js) para controlar ráfagas de tráfico.
+4. **Gestión de Secretos:** Credenciales y tokens manejados exclusivamente a través de GitHub Secrets e inyectados de forma segura como variables de entorno en tiempo de ejecución.
 
 ### ♻️ Automatización de Entorno (Demo Autónoma)
 
-Dado que el proyecto funciona como un portafolio público, se implementó un mecanismo para mantener los datos limpios y consistentes:
+Dado que el proyecto funciona como un portafolio público, se implementó un mecanismo en la nube para mantener los datos limpios y consistentes sin intervención de un sistema operativo host:
 
-- **Cronjob de Sistema:** Un script en bash se ejecuta todos los días a las **3:00 AM (CST)**.
-- **Proceso:** El script destruye los volúmenes actuales de Docker (`docker compose down -v`) y vuelve a levantar la infraestructura (`docker compose up -d`).
-- **Resultado:** La base de datos es purgada de los datos ingresados por visitantes en el día y se repuebla automáticamente con el archivo `init.sql`, garantizando una experiencia de demostración impecable cada mañana.
+- **Scheduled Workflows:** Un job automatizado de GitHub Actions se ejecuta mediante una regla Cron todos los días a las **3:00 AM (CST)**.
+- **Proceso:** El pipeline establece una conexión segura con la base de datos en Azure e inyecta los comandos de purga y repoblación (`init.sql`).
+- **Resultado:** El sistema se restablece de forma imperceptible, garantizando una experiencia de demostración impecable cada mañana sin la necesidad de destruir o recrear contenedores (Zero-Downtime).
 
 ## HU-001: Registro e Inicio de Sesión de Paciente
 

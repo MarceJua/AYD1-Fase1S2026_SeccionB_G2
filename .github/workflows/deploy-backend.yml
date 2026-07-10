@@ -3,7 +3,7 @@ name: Deploy Backend to Azure
 on:
   push:
     branches:
-      - feature/azure-migration
+      - main
     paths:
       - "backend/**"
       - ".github/workflows/deploy-backend.yml"
